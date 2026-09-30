@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -257,25 +258,6 @@
     </div>
   </div>
 
-  <!-- MODAL: SUCCESS WITH WHATSAPP -->
-  <div id="success-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-center">
-      <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">✅</div>
-      <div>
-        <h3 class="font-bold text-slate-900 text-sm">बुकिंग सफल हुई!</h3>
-        <p id="success-booking-summary" class="text-xs text-slate-600 mt-1"></p>
-      </div>
-      <div class="space-y-2 pt-2">
-        <a id="whatsapp-notify-btn" href="#" target="_blank" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md transition">
-          <span>📲 Send to Owner via WhatsApp</span>
-        </a>
-        <button type="button" onclick="closeModal('success-modal'); navigateCustomer('bookings');" class="w-full bg-slate-100 text-slate-700 font-semibold py-2 rounded-xl text-xs">
-          View My Bookings
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- MODAL: REGISTER OWNER -->
   <div id="register-owner-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
@@ -294,7 +276,7 @@
             <input type="text" id="reg-owner-name" required class="w-full p-2 border rounded-lg" />
           </div>
           <div>
-            <label class="block font-semibold text-slate-700">Owner WhatsApp No. (10 digits) *</label>
+            <label class="block font-semibold text-slate-700">Mobile Number (10 digits) *</label>
             <input type="tel" id="reg-mobile" pattern="[6-9][0-9]{9}" maxlength="10" required class="w-full p-2 border rounded-lg" placeholder="94310XXXXX" />
           </div>
         </div>
@@ -352,8 +334,8 @@
   <script>
     // SECURITY CONFIG
     const SECURITY_PINS = {
-      admin: "7890",
-      owner: "1234"
+      admin: "2006", // आपका एडमिन पिन
+      owner: "2008"  // रेस्टोरेंट ओनर पिन
     };
 
     let authenticatedRoles = {
@@ -363,7 +345,454 @@
 
     let targetRoleToUnlock = null;
 
-    // DATA STATE (With Owner Phone for WhatsApp Trigger)
+    // DATA STATE
     const ROHTAS_LOCALITIES = [
       { id: "sasaram", name_en: "Sasaram", name_hi: "सासाराम", pincode: "821115" },
-      { id: "dehri", name_en: "Dehri-on-Sone", name_hi: 
+      { id: "dehri", name_en: "Dehri-on-Sone", name_hi: "डेहरी-ऑन-सोन", pincode: "821307" },
+      { id: "bikramganj", name_en: "Bikramganj", name_hi: "बिक्रमगंज", pincode: "802212" },
+      { id: "nokha", name_en: "Nokha", name_hi: "नोखा", pincode: "802215" },
+      { id: "chenari", name_en: "Chenari", name_hi: "चेनारी", pincode: "821104" }
+    ];
+
+    let dbLocalities = [...ROHTAS_LOCALITIES];
+    let dbRestaurants = [
+      {
+        id: "rohtas-1",
+        name: "Grand Sasaram Family Restaurant",
+        owner_name: "Ramesh Singh",
+        locality_id: "sasaram",
+        pincode: "821115",
+        address_line: "Near Sher Shah Suri Tomb, Sasaram",
+        cuisine_tags: ["Bhojpuri Thali", "North Indian"],
+        is_pure_veg: false,
+        is_family_friendly: true,
+        status: "active"
+      },
+      {
+        id: "rohtas-2",
+        name: "Sone View Bhojanalaya",
+        owner_name: "Vikash Gupta",
+        locality_id: "dehri",
+        pincode: "821307",
+        address_line: "Station Road, Dehri-on-Sone",
+        cuisine_tags: ["Pure Veg Thali", "Litti Chokha"],
+        is_pure_veg: true,
+        is_family_friendly: true,
+        status: "active"
+      }
+    ];
+
+    let dbTables = [
+      { id: "t1", restaurant_id: "rohtas-1", table_number: "Table 1 (Family)", capacity: 4, is_operational: true },
+      { id: "t2", restaurant_id: "rohtas-1", table_number: "Table 2 (Window)", capacity: 2, is_operational: true },
+      { id: "t3", restaurant_id: "rohtas-2", table_number: "Table 1", capacity: 4, is_operational: true }
+    ];
+
+    let dbBookings = [
+      {
+        id: "LT-ROH-101",
+        restaurant_id: "rohtas-1",
+        table_id: "t1",
+        guest_name: "Rahul Verma",
+        guest_phone: "9431011223",
+        booking_date: new Date().toISOString().split('T')[0],
+        booking_time: "07:30 PM",
+        guest_count: 4,
+        status: "confirmed"
+      }
+    ];
+
+    let currentRole = 'customer';
+    let currentLang = 'en';
+    let selectedLocality = 'all';
+    let activeFilter = 'all';
+    let selectedRestaurant = null;
+    let selectedSlot = "07:30 PM";
+    let selectedTable = null;
+
+    const DEFAULT_SLOTS = ["12:00 PM", "01:00 PM", "07:30 PM", "08:30 PM"];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('booking-date-picker').value = todayStr;
+      document.getElementById('booking-date-picker').min = todayStr;
+      renderLocalityDropdowns();
+      renderRestaurantCards();
+      renderOwnerQueue();
+    });
+
+    // SECURITY PIN HANDLING
+    function requestRoleAccess(role) {
+      if (authenticatedRoles[role]) {
+        setRole(role);
+      } else {
+        targetRoleToUnlock = role;
+        document.getElementById('pin-modal-title').innerText = `${role.toUpperCase()} Authentication`;
+        document.getElementById('pin-modal-desc').innerText = `Enter secret PIN to access ${role} portal`;
+        document.getElementById('input-pin-code').value = '';
+        const modal = document.getElementById('pin-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.getElementById('input-pin-code').focus();
+      }
+    }
+
+    function verifyPinSubmission() {
+      const entered = document.getElementById('input-pin-code').value.trim();
+      if (entered === SECURITY_PINS[targetRoleToUnlock]) {
+        authenticatedRoles[targetRoleToUnlock] = true;
+        closeModal('pin-modal');
+        setRole(targetRoleToUnlock);
+      } else {
+        alert("गलत पिन! (Incorrect Security PIN)");
+        document.getElementById('input-pin-code').value = '';
+      }
+    }
+
+    function logoutRole() {
+      authenticatedRoles.admin = false;
+      authenticatedRoles.owner = false;
+      setRole('customer');
+      alert("Portal Locked Successfully.");
+    }
+
+    function setRole(role) {
+      currentRole = role;
+      document.getElementById('customer-view').classList.toggle('hidden', role !== 'customer');
+      document.getElementById('owner-view').classList.toggle('hidden', role !== 'owner');
+      document.getElementById('admin-view').classList.toggle('hidden', role !== 'admin');
+
+      ['customer', 'owner', 'admin'].forEach(r => {
+        const btn = document.getElementById(`role-btn-${r}`);
+        if (r === role) {
+          btn.className = "px-2.5 py-1 rounded font-bold text-xs bg-brand-600 text-white transition";
+        } else {
+          btn.className = "px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition";
+        }
+      });
+
+      if (role === 'admin') renderAdminDashboard();
+      if (role === 'owner') renderOwnerQueue();
+    }
+
+    function renderLocalityDropdowns() {
+      const filterSelect = document.getElementById('locality-filter-select');
+      const regSelect = document.getElementById('reg-block-select');
+
+      filterSelect.innerHTML = `<option value="all">All Rohtas (सभी क्षेत्र)</option>` + 
+        dbLocalities.map(loc => `<option value="${loc.id}">${loc.name_en} (${loc.name_hi})</option>`).join('');
+
+      regSelect.innerHTML = `<option value="">-- Choose Block --</option>` +
+        dbLocalities.map(loc => `<option value="${loc.id}">${loc.name_en} (${loc.pincode})</option>`).join('');
+
+      regSelect.addEventListener('change', function() {
+        const item = dbLocalities.find(l => l.id === this.value);
+        if (item) document.getElementById('reg-pincode').value = item.pincode;
+      });
+    }
+
+    function onLocalityChange(val) {
+      selectedLocality = val;
+      renderRestaurantCards();
+    }
+
+    function filterBy(filter) {
+      activeFilter = filter;
+      renderRestaurantCards();
+    }
+
+    function handleSearch(term) {
+      renderRestaurantCards(term.toLowerCase().trim());
+    }
+
+    function renderRestaurantCards(searchQuery = "") {
+      const target = document.getElementById('restaurant-cards-container');
+      const countEl = document.getElementById('restaurant-count-display');
+
+      let list = dbRestaurants.filter(r => r.status === 'active');
+
+      if (selectedLocality !== 'all') {
+        list = list.filter(r => r.locality_id === selectedLocality);
+      }
+      if (activeFilter === 'veg') list = list.filter(r => r.is_pure_veg);
+      if (activeFilter === 'family') list = list.filter(r => r.is_family_friendly);
+
+      if (searchQuery) {
+        list = list.filter(r => r.name.toLowerCase().includes(searchQuery) || (r.address_line || '').toLowerCase().includes(searchQuery));
+      }
+
+      countEl.innerText = `${list.length} outlets`;
+
+      if (list.length === 0) {
+        target.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-slate-50 border rounded-2xl">No restaurants found in this locality. Register one now!</div>`;
+        return;
+      }
+
+      target.innerHTML = list.map(r => `
+        <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm p-4 space-y-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm">${r.name}</h3>
+              <p class="text-xs text-slate-500">${(r.cuisine_tags || []).join(', ')}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">${r.address_line} (${r.pincode})</p>
+            </div>
+            ${r.is_pure_veg ? '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">PURE VEG</span>' : ''}
+          </div>
+          <button type="button" onclick="startBookingFlow('${r.id}')" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs uppercase transition">
+            Reserve Table
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function startBookingFlow(restaurantId) {
+      selectedRestaurant = dbRestaurants.find(r => r.id === restaurantId);
+      selectedTable = null;
+      selectedSlot = DEFAULT_SLOTS[0];
+
+      document.getElementById('restaurant-details-view').innerHTML = `
+        <div class="p-4 bg-slate-900 text-white rounded-2xl">
+          <h2 class="text-sm font-bold">${selectedRestaurant.name}</h2>
+          <p class="text-xs text-slate-300">${selectedRestaurant.address_line}</p>
+        </div>
+      `;
+
+      const slotCont = document.getElementById('time-slot-container');
+      slotCont.innerHTML = DEFAULT_SLOTS.map(s => `
+        <button type="button" onclick="selectSlot('${s}')" class="slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold ${s === selectedSlot ? 'bg-brand-600 text-white' : 'bg-white text-slate-700'}" data-slot="${s}">
+          ${s}
+        </button>
+      `).join('');
+
+      navigateCustomer('details');
+      updateVisualFloorLayout();
+    }
+
+    function selectSlot(slot) {
+      selectedSlot = slot;
+      document.querySelectorAll('.slot-btn').forEach(b => {
+        b.className = b.getAttribute('data-slot') === slot 
+          ? "slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold bg-brand-600 text-white" 
+          : "slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold bg-white text-slate-700";
+      });
+      selectedTable = null;
+      updateVisualFloorLayout();
+    }
+
+    function onBookingParamChange() {
+      selectedTable = null;
+      updateVisualFloorLayout();
+    }
+
+    function updateVisualFloorLayout() {
+      if (!selectedRestaurant) return;
+
+      const date = document.getElementById('booking-date-picker').value;
+      const restTables = dbTables.filter(t => t.restaurant_id === selectedRestaurant.id && t.is_operational);
+      const grid = document.getElementById('floor-layout-grid');
+      const bookBtn = document.getElementById('proceed-booking-btn');
+
+      grid.innerHTML = restTables.map(tbl => {
+        const isBooked = dbBookings.some(b => 
+          b.table_id === tbl.id && 
+          b.booking_date === date && 
+          b.booking_time === selectedSlot && 
+          b.status !== 'cancelled'
+        );
+
+        const isSelected = selectedTable && selectedTable.id === tbl.id;
+
+        if (isBooked) {
+          return `
+            <div class="p-3 rounded-xl border bg-slate-200 text-slate-400 cursor-not-allowed text-center">
+              <span class="font-bold text-xs block">${tbl.table_number}</span>
+              <span class="text-[9px] text-rose-500 font-bold">Booked</span>
+            </div>
+          `;
+        }
+
+        return `
+          <div onclick="selectTable('${tbl.id}')" class="p-3 rounded-xl border cursor-pointer text-center transition ${isSelected ? 'bg-brand-500 text-white ring-2 ring-brand-300' : 'bg-white hover:border-brand-500'}">
+            <span class="font-bold text-xs block">${tbl.table_number}</span>
+            <span class="text-[9px] opacity-80">${tbl.capacity} Seats</span>
+          </div>
+        `;
+      }).join('');
+
+      if (selectedTable) {
+        bookBtn.disabled = false;
+        bookBtn.className = "w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase cursor-pointer transition";
+        bookBtn.innerText = `Continue with ${selectedTable.table_number}`;
+      } else {
+        bookBtn.disabled = true;
+        bookBtn.className = "w-full bg-slate-300 text-slate-500 font-bold py-3 px-4 rounded-xl text-xs uppercase cursor-not-allowed";
+        bookBtn.innerText = "Select an Available Table";
+      }
+    }
+
+    function selectTable(id) {
+      selectedTable = dbTables.find(t => t.id === id);
+      updateVisualFloorLayout();
+    }
+
+    function confirmBookingModal() {
+      document.getElementById('modal-rest-name').innerText = selectedRestaurant.name;
+      document.getElementById('modal-datetime').innerText = `${document.getElementById('booking-date-picker').value} @ ${selectedSlot}`;
+      document.getElementById('modal-guests').innerText = `${document.getElementById('booking-guests-picker').value} Guests`;
+      document.getElementById('modal-table').innerText = selectedTable.table_number;
+
+      const m = document.getElementById('booking-modal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    // STRICT VALIDATION ON BOOKING
+    function executeBooking() {
+      const date = document.getElementById('booking-date-picker').value;
+      const guests = parseInt(document.getElementById('booking-guests-picker').value, 10);
+      const name = document.getElementById('cust-input-name').value.trim();
+      const rawPhone = document.getElementById('cust-input-phone').value.trim();
+
+      // Mobile number security validation (10 digits starting with 6,7,8,9)
+      const phoneRegex = /^[6-9]\d{9}$/;
+      if (!name || name.length < 2) {
+        alert("कृपया अपना सही नाम दर्ज करें।");
+        return;
+      }
+      if (!phoneRegex.test(rawPhone)) {
+        alert("अमान्य मोबाइल नंबर! कृपया 10 अंकों का सही भारतीय मोबाइल नंबर दर्ज करें।");
+        return;
+      }
+
+      const bookingId = "LT-ROH-" + Math.floor(100 + Math.random() * 900);
+
+      dbBookings.push({
+        id: bookingId,
+        restaurant_id: selectedRestaurant.id,
+        table_id: selectedTable.id,
+        guest_name: name,
+        guest_phone: rawPhone,
+        booking_date: date,
+        booking_time: selectedSlot,
+        guest_count: guests,
+        status: 'confirmed'
+      });
+
+      alert(`✅ टेबल सफलतापूर्वक बुक हो गई!\nबुकिंग ID: ${bookingId}`);
+      closeModal('booking-modal');
+      navigateCustomer('bookings');
+    }
+
+    function renderOwnerQueue() {
+      const cont = document.getElementById('owner-booking-queue');
+      cont.innerHTML = dbBookings.map(b => `
+        <div class="p-3 border rounded-xl bg-white space-y-1 text-xs">
+          <div class="flex justify-between font-bold">
+            <span>${b.guest_name} (${b.guest_phone})</span>
+            <span class="text-emerald-600 uppercase">${b.status}</span>
+          </div>
+          <p class="text-slate-500">${b.booking_date} @ ${b.booking_time} (${b.guest_count} Guests)</p>
+        </div>
+      `).join('');
+    }
+
+    function openRegisterOwnerModal() {
+      const m = document.getElementById('register-owner-modal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function handleRestaurantRegistration(event) {
+      event.preventDefault();
+      const name = document.getElementById('reg-rest-name').value;
+      const owner = document.getElementById('reg-owner-name').value;
+      const phone = document.getElementById('reg-mobile').value;
+      const block = document.getElementById('reg-block-select').value;
+      const pin = document.getElementById('reg-pincode').value;
+      const address = document.getElementById('reg-address').value;
+      const cuisine = document.getElementById('reg-cuisine').value.split(',').map(s => s.trim());
+
+      const newId = "rest-" + Date.now();
+      dbRestaurants.push({
+        id: newId,
+        name: name,
+        owner_name: owner,
+        owner_phone: phone,
+        locality_id: block,
+        pincode: pin,
+        address_line: address,
+        cuisine_tags: cuisine,
+        status: 'pending_approval'
+      });
+
+      dbTables.push({ id: "t-" + Date.now(), restaurant_id: newId, table_number: "Table 1 (Family)", capacity: 4, is_operational: true });
+
+      alert("रेस्टोरेंट रजिस्ट्रेशन सबमिट हुआ! सुपरएडमिन द्वारा अप्रूवल की आवश्यकता है।");
+      closeModal('register-owner-modal');
+      if (authenticatedRoles.admin) renderAdminDashboard();
+    }
+
+    function renderAdminDashboard() {
+      const tbody = document.getElementById('admin-restaurant-tbody');
+      tbody.innerHTML = dbRestaurants.map(r => `
+        <tr class="border-b">
+          <td class="p-2.5 font-bold">${r.name}</td>
+          <td class="p-2.5">${r.locality_id}</td>
+          <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${r.status}</span></td>
+          <td class="p-2.5 text-right">
+            ${r.status === 'pending_approval' ? `<button type="button" onclick="approveRestaurant('${r.id}')" class="px-2 py-1 bg-emerald-600 text-white rounded font-bold text-[10px]">Approve</button>` : '—'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function approveRestaurant(id) {
+      const r = dbRestaurants.find(item => item.id === id);
+      if (r) r.status = 'active';
+      renderAdminDashboard();
+      renderRestaurantCards();
+    }
+
+    function navigateCustomer(screen) {
+      ['home', 'details', 'bookings'].forEach(s => {
+        document.getElementById(`cust-screen-${s}`).classList.toggle('hidden', s !== screen);
+      });
+      if (screen === 'bookings') renderCustomerBookings();
+    }
+
+    function renderCustomerBookings() {
+      const cont = document.getElementById('my-bookings-list');
+      if (dbBookings.length === 0) {
+        cont.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">No bookings yet.</div>`;
+        return;
+      }
+      cont.innerHTML = dbBookings.map(b => `
+        <div class="p-3 border rounded-xl bg-white space-y-1 text-xs">
+          <div class="flex justify-between font-bold">
+            <span>Booking #${b.id}</span>
+            <span class="text-emerald-600 uppercase">${b.status}</span>
+          </div>
+          <p class="text-slate-500">${b.booking_date} @ ${b.booking_time} (${b.guest_count} Guests)</p>
+        </div>
+      `).join('');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+      document.getElementById(id).classList.remove('flex');
+    }
+
+    function triggerNearbyGps() {
+      alert("GPS active: Showing restaurants near Sasaram.");
+      selectedLocality = 'sasaram';
+      document.getElementById('locality-filter-select').value = 'sasaram';
+      renderRestaurantCards();
+    }
+
+    function toggleLang() {
+      currentLang = currentLang === 'en' ? 'hi' : 'en';
+      document.getElementById('current-lang-label').innerText = currentLang === 'en' ? 'हिन्दी' : 'English';
+    }
+  </script>
+</body>
+</html>
