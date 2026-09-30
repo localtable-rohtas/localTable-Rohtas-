@@ -65,7 +65,22 @@
 
   <!-- MAIN CONTAINER -->
   <main class="w-full max-w-4xl mx-auto bg-white min-h-[calc(100vh-70px)] flex flex-col shadow-xl relative pb-16">
-
+  <!-- MODAL: PIN AUTHENTICATION -->
+  <div id="pin-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl text-center">
+      <div class="w-12 h-12 bg-orange-100 text-brand-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">🔒</div>
+      <div>
+        <h3 id="pin-modal-title" class="font-bold text-slate-900 text-sm">Security PIN Required</h3>
+        <p id="pin-modal-desc" class="text-xs text-slate-500 mt-1">Enter PIN to access restricted area</p>
+      </div>
+      <input type="password" id="input-pin-code" maxlength="6" placeholder="Enter PIN" class="w-full p-2.5 text-center text-lg tracking-widest border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 font-bold" />
+      <div class="flex gap-2">
+        <button type="button" onclick="closeModal('pin-modal')" class="w-1/2 bg-slate-100 font-semibold py-2 rounded-xl text-xs text-slate-700">Cancel</button>
+        <button type="button" onclick="verifyPinSubmission()" class="w-1/2 bg-brand-600 hover:bg-brand-700 font-bold py-2 rounded-xl text-xs text-white">Unlock</button>
+      </div>
+    </div>
+  </div>
+    
     <!-- 1. CUSTOMER PORTAL -->
     <div id="customer-view" class="flex-1 flex flex-col">
       <section id="cust-screen-home" class="p-4 space-y-4 flex-1">
