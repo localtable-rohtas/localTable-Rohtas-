@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,6 +10,8 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3170/3170733.png" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('/sw.js');
@@ -27,7 +30,7 @@
           }
         }
       }
-    };
+    }
   </script>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between select-none">
@@ -255,25 +258,6 @@
     </div>
   </div>
 
-  <!-- MODAL: SUCCESS WITH WHATSAPP -->
-  <div id="success-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-center">
-      <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">✅</div>
-      <div>
-        <h3 class="font-bold text-slate-900 text-sm">बुकिंग सफल हुई!</h3>
-        <p id="success-booking-summary" class="text-xs text-slate-600 mt-1"></p>
-      </div>
-      <div class="space-y-2 pt-2">
-        <a id="whatsapp-notify-btn" href="#" target="_blank" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md transition">
-          <span>📲 Send to Owner via WhatsApp</span>
-        </a>
-        <button type="button" onclick="closeModal('success-modal'); navigateCustomer('bookings');" class="w-full bg-slate-100 text-slate-700 font-semibold py-2 rounded-xl text-xs">
-          View My Bookings
-        </button>
-      </div>
-    </div>
-  </div>
-
   <!-- MODAL: REGISTER OWNER -->
   <div id="register-owner-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
@@ -292,7 +276,7 @@
             <input type="text" id="reg-owner-name" required class="w-full p-2 border rounded-lg" />
           </div>
           <div>
-            <label class="block font-semibold text-slate-700">Owner WhatsApp No. (10 digits) *</label>
+            <label class="block font-semibold text-slate-700">Mobile Number (10 digits) *</label>
             <input type="tel" id="reg-mobile" pattern="[6-9][0-9]{9}" maxlength="10" required class="w-full p-2 border rounded-lg" placeholder="94310XXXXX" />
           </div>
         </div>
@@ -350,8 +334,8 @@
   <script>
     // SECURITY CONFIG
     const SECURITY_PINS = {
-      admin: "2006",
-      owner: "2008"
+      admin: "2006", // आपका एडमिन पिन
+      owner: "2008"  // रेस्टोरेंट ओनर पिन
     };
 
     let authenticatedRoles = {
@@ -366,4 +350,37 @@
       { id: "sasaram", name_en: "Sasaram", name_hi: "सासाराम", pincode: "821115" },
       { id: "dehri", name_en: "Dehri-on-Sone", name_hi: "डेहरी-ऑन-सोन", pincode: "821307" },
       { id: "bikramganj", name_en: "Bikramganj", name_hi: "बिक्रमगंज", pincode: "802212" },
-      { id: "nokha", name_en: "Nokha", name_hi:
+      { id: "nokha", name_en: "Nokha", name_hi: "नोखा", pincode: "802215" },
+      { id: "chenari", name_en: "Chenari", name_hi: "चेनारी", pincode: "821104" }
+    ];
+
+    let dbLocalities = [...ROHTAS_LOCALITIES];
+    let dbRestaurants = [
+      {
+        id: "rohtas-1",
+        name: "Grand Sasaram Family Restaurant",
+        owner_name: "Ramesh Singh",
+        locality_id: "sasaram",
+        pincode: "821115",
+        address_line: "Near Sher Shah Suri Tomb, Sasaram",
+        cuisine_tags: ["Bhojpuri Thali", "North Indian"],
+        is_pure_veg: false,
+        is_family_friendly: true,
+        status: "active"
+      },
+      {
+        id: "rohtas-2",
+        name: "Sone View Bhojanalaya",
+        owner_name: "Vikash Gupta",
+        locality_id: "dehri",
+        pincode: "821307",
+        address_line: "Station Road, Dehri-on-Sone",
+        cuisine_tags: ["Pure Veg Thali", "Litti Chokha"],
+        is_pure_veg: true,
+        is_family_friendly: true,
+        status: "active"
+      }
+    ];
+
+    let dbTables = [
+      { id: 
