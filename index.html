@@ -1,15 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>LocalTable Rohtas | लोकल टेबल रोहतास (बिहार)</title>
-  <!-- Tailwind CSS CDN -->
+  <title>LocalTable Rohtas | लोकल टेबल रोहतास</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
-  <!-- Supabase JS Client CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     tailwind.config = {
@@ -28,11 +24,6 @@
       }
     }
   </script>
-  <style>
-    .touch-target { min-height: 44px; min-width: 44px; }
-    .no-scrollbar::-webkit-scrollbar { display: none; }
-    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-  </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between select-none">
 
@@ -49,21 +40,20 @@
     <div class="flex items-center gap-2">
       <!-- Role Switcher -->
       <div class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
-        <button onclick="setRole('customer')" id="role-btn-customer" class="px-2 py-1 rounded font-medium text-slate-300">Customer</button>
-        <button onclick="setRole('owner')" id="role-btn-owner" class="px-2 py-1 rounded font-medium text-slate-300">Owner</button>
-        <button onclick="setRole('admin')" id="role-btn-admin" class="px-2 py-1 rounded font-medium text-slate-300">Admin</button>
+        <button type="button" onclick="setRole('customer')" id="role-btn-customer" class="px-2.5 py-1 rounded font-bold text-xs bg-brand-600 text-white transition">Customer</button>
+        <button type="button" onclick="setRole('owner')" id="role-btn-owner" class="px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition">Owner</button>
+        <button type="button" onclick="setRole('admin')" id="role-btn-admin" class="px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition">Admin</button>
       </div>
 
       <!-- Language Toggle -->
-      <button onclick="toggleLang()" class="flex items-center gap-1 bg-brand-600 hover:bg-brand-700 px-2.5 py-1 rounded text-white font-semibold transition">
-        <i data-lucide="globe" class="w-3.5 h-3.5"></i>
+      <button type="button" onclick="toggleLang()" class="flex items-center gap-1 bg-brand-600 px-2.5 py-1 rounded text-white font-semibold text-xs">
         <span id="current-lang-label">हिन्दी</span>
       </button>
     </div>
   </header>
 
   <!-- MAIN APP CONTAINER -->
-  <main class="w-full max-w-4xl mx-auto bg-white min-h-[calc(100vh-80px)] flex flex-col shadow-xl relative pb-20 md:pb-8">
+  <main class="w-full max-w-4xl mx-auto bg-white min-h-[calc(100vh-70px)] flex flex-col shadow-xl relative pb-16">
 
     <!-- 1. CUSTOMER PORTAL -->
     <div id="customer-view" class="flex-1 flex flex-col">
@@ -72,12 +62,9 @@
         <!-- Rohtas Location Selector Box -->
         <div class="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3.5 space-y-2.5">
           <div class="flex items-center justify-between">
-            <div class="flex items-center gap-1.5 text-xs font-bold text-orange-900">
-              <i data-lucide="map-pin" class="w-4 h-4 text-brand-600"></i>
-              <span>Select Your Location (Rohtas, Bihar)</span>
-            </div>
-            <button onclick="triggerNearbyGps()" class="text-[11px] font-semibold text-brand-600 bg-white border border-orange-200 hover:bg-orange-100/50 px-2 py-1 rounded-md flex items-center gap-1 transition">
-              <i data-lucide="crosshair" class="w-3 h-3"></i> <span>Nearby (GPS)</span>
+            <div class="text-xs font-bold text-orange-900">📍 Select Location (Rohtas, Bihar)</div>
+            <button type="button" onclick="triggerNearbyGps()" class="text-[11px] font-semibold text-brand-600 bg-white border border-orange-200 px-2 py-1 rounded-md">
+              🎯 Nearby (GPS)
             </button>
           </div>
 
@@ -91,7 +78,7 @@
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">City / Town / Block</label>
-              <select id="locality-filter-select" onchange="onLocalityChange(this.value)" class="w-full p-2 bg-white rounded-lg border border-slate-200 font-medium text-slate-800 focus:ring-2 focus:ring-brand-500">
+              <select id="locality-filter-select" onchange="onLocalityChange(this.value)" class="w-full p-2 bg-white rounded-lg border border-slate-200 font-medium text-slate-800">
                 <option value="all">All Rohtas (सभी क्षेत्र)</option>
               </select>
             </div>
@@ -99,62 +86,52 @@
         </div>
 
         <!-- Search Bar -->
-        <div class="relative">
-          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3.5"></i>
-          <input 
-            type="text" 
-            id="search-input" 
-            oninput="handleSearch(this.value)" 
-            placeholder="Search restaurant, cuisine, or area in Rohtas..." 
-            class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 transition"
-          />
-        </div>
+        <input 
+          type="text" 
+          id="search-input" 
+          oninput="handleSearch(this.value)" 
+          placeholder="🔍 Search restaurant, cuisine, or area in Rohtas..." 
+          class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-brand-500"
+        />
 
         <!-- Quick Filters -->
-        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-          <button onclick="filterBy('all')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border bg-slate-900 text-white whitespace-nowrap" data-filter="all">All</button>
-          <button onclick="filterBy('veg')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 bg-white text-slate-700 whitespace-nowrap" data-filter="veg">Pure Veg</button>
-          <button onclick="filterBy('family')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 bg-white text-slate-700 whitespace-nowrap" data-filter="family">Family Dine</button>
+        <div class="flex items-center gap-2 overflow-x-auto py-1">
+          <button type="button" onclick="filterBy('all')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border bg-slate-900 text-white whitespace-nowrap" data-filter="all">All</button>
+          <button type="button" onclick="filterBy('veg')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 bg-white text-slate-700 whitespace-nowrap" data-filter="veg">Pure Veg</button>
+          <button type="button" onclick="filterBy('family')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 bg-white text-slate-700 whitespace-nowrap" data-filter="family">Family Dine</button>
         </div>
 
-        <!-- Callout Banner: Register Your Restaurant -->
+        <!-- Callout Banner -->
         <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-3.5 flex items-center justify-between shadow-md">
           <div class="space-y-0.5">
             <h4 class="text-xs font-bold text-orange-400">Own a Restaurant in Rohtas?</h4>
             <p class="text-[11px] text-slate-300">Add your outlet to the local reservation network.</p>
           </div>
-          <button onclick="openRegisterOwnerModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap touch-target flex items-center gap-1 shadow">
-            <i data-lucide="store" class="w-3.5 h-3.5"></i>
-            <span>Register Now</span>
+          <button type="button" onclick="openRegisterOwnerModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap">
+            Register Now
           </button>
         </div>
 
         <!-- Active Filter Indicator -->
         <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
           <span id="current-locality-display" class="font-semibold text-slate-700">Showing verified restaurants</span>
-          <span id="restaurant-count-display" class="text-[11px] bg-slate-100 px-2 py-0.5 rounded-full font-bold">5 found</span>
+          <span id="restaurant-count-display" class="text-[11px] bg-slate-100 px-2 py-0.5 rounded-full font-bold">2 found</span>
         </div>
 
         <!-- Restaurant Listing Container -->
-        <div class="space-y-4" id="restaurant-cards-container">
-          <!-- Injected dynamically -->
-        </div>
+        <div class="space-y-4" id="restaurant-cards-container"></div>
       </section>
 
       <!-- RESTAURANT DETAILS & TABLE RESERVATION -->
       <section id="cust-screen-details" class="hidden flex-1 flex flex-col p-4 space-y-4">
-        <button onclick="navigateCustomer('home')" class="inline-flex items-center gap-1 text-xs font-semibold text-slate-600 hover:text-slate-900">
-          <i data-lucide="chevron-left" class="w-4 h-4"></i> <span>Back to Outlets</span>
+        <button type="button" onclick="navigateCustomer('home')" class="text-xs font-semibold text-brand-600 flex items-center gap-1">
+          ← Back to Outlets
         </button>
 
-        <div id="restaurant-details-view" class="space-y-4"></div>
+        <div id="restaurant-details-view" class="space-y-2"></div>
 
         <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-4">
-          <h3 class="font-bold text-slate-900 text-sm border-b pb-2 flex items-center gap-2">
-            <i data-lucide="calendar" class="w-4 h-4 text-brand-600"></i>
-            <span>Choose Reservation Details</span>
-          </h3>
-
+          <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider border-b pb-2">Choose Reservation Details</h3>
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="block text-xs font-semibold text-slate-600 mb-1">Date</label>
@@ -167,63 +144,50 @@
                 <option value="2" selected>2 Guests</option>
                 <option value="4">4 Guests</option>
                 <option value="6">6 Guests</option>
-                <option value="8">8+ Guests</option>
               </select>
             </div>
           </div>
 
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Select Time Slot</label>
-            <div id="time-slot-container" class="flex gap-2 overflow-x-auto no-scrollbar py-1"></div>
+            <div id="time-slot-container" class="flex gap-2 overflow-x-auto py-1"></div>
           </div>
         </div>
 
         <!-- VISUAL FLOOR PLAN -->
         <div class="space-y-2">
-          <div class="flex items-center justify-between">
-            <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Visual Floor Layout</span>
-            <div class="flex items-center gap-3 text-[10px]">
-              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-white border border-slate-300"></span> Available</span>
-              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-brand-500"></span> Selected</span>
-              <span class="flex items-center gap-1"><span class="w-2.5 h-2.5 rounded bg-slate-300"></span> Booked</span>
-            </div>
-          </div>
-
+          <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Select Your Table</span>
           <div class="bg-slate-100 border border-dashed border-slate-300 rounded-2xl p-4 text-center">
             <div class="text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-widest">Kitchen & Reception Counter</div>
-            <div id="floor-layout-grid" class="grid grid-cols-3 gap-3"></div>
+            <div id="floor-layout-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
             <div class="text-[10px] uppercase font-bold text-slate-400 mt-4 tracking-widest">Main Entrance</div>
           </div>
-          <p id="table-warning-msg" class="text-xs text-rose-600 font-medium hidden text-center mt-1"></p>
         </div>
 
-        <div class="pt-2">
-          <button 
-            id="proceed-booking-btn" 
-            onclick="confirmBookingModal()" 
-            disabled 
-            class="w-full bg-slate-300 text-slate-500 font-bold py-3 px-4 rounded-xl touch-target text-sm transition cursor-not-allowed flex items-center justify-center gap-2"
-          >
-            <span>Select a Table to Continue</span>
-          </button>
-        </div>
+        <button 
+          id="proceed-booking-btn" 
+          type="button" 
+          onclick="confirmBookingModal()" 
+          disabled 
+          class="w-full bg-slate-300 text-slate-500 font-bold py-3 px-4 rounded-xl text-xs uppercase cursor-not-allowed transition"
+        >
+          Select an Available Table
+        </button>
       </section>
 
       <!-- MY BOOKINGS -->
       <section id="cust-screen-bookings" class="hidden flex-1 p-4 space-y-4">
-        <h2 class="text-xl font-bold text-slate-900">My Reservations</h2>
+        <h2 class="text-base font-bold text-slate-900">My Reservations</h2>
         <div id="my-bookings-list" class="space-y-3"></div>
       </section>
 
       <!-- BOTTOM NAV -->
-      <nav class="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto bg-white border-t border-slate-200 px-6 py-2 flex items-center justify-around z-40">
-        <button onclick="navigateCustomer('home')" id="cust-nav-home" class="flex flex-col items-center gap-1 text-brand-600">
-          <i data-lucide="compass" class="w-5 h-5"></i>
-          <span class="text-[10px] font-semibold">Explore</span>
+      <nav class="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto bg-white border-t border-slate-200 px-6 py-2.5 flex items-center justify-around z-40">
+        <button type="button" onclick="navigateCustomer('home')" id="cust-nav-home" class="font-bold text-xs text-brand-600">
+          Explore
         </button>
-        <button onclick="navigateCustomer('bookings')" id="cust-nav-bookings" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-700">
-          <i data-lucide="bookmark-check" class="w-5 h-5"></i>
-          <span class="text-[10px] font-semibold">Bookings</span>
+        <button type="button" onclick="navigateCustomer('bookings')" id="cust-nav-bookings" class="font-bold text-xs text-slate-400 hover:text-slate-700">
+          Bookings
         </button>
       </nav>
     </div>
@@ -233,15 +197,13 @@
       <div class="flex items-center justify-between border-b pb-3">
         <div>
           <span class="text-xs font-semibold text-brand-600 uppercase tracking-wider">Owner Portal</span>
-          <h2 class="text-lg font-bold text-slate-900" id="owner-restaurant-name">[Demo] Grand Sasaram Family Restaurant</h2>
+          <h2 class="text-base font-bold text-slate-900">Grand Sasaram Family Restaurant</h2>
         </div>
-        <button onclick="openAddTableModal()" class="px-3 py-1.5 bg-brand-600 text-white rounded-lg text-xs font-semibold flex items-center gap-1">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Table
-        </button>
+        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded">Open Now</span>
       </div>
 
       <div class="space-y-3">
-        <h3 class="text-sm font-bold text-slate-800">Today's Reservations</h3>
+        <h3 class="text-xs font-bold text-slate-700 uppercase">Live Reservations Queue</h3>
         <div id="owner-booking-queue" class="space-y-2"></div>
       </div>
     </div>
@@ -251,7 +213,7 @@
       <div class="flex items-center justify-between border-b pb-3">
         <div>
           <span class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Superadmin Panel</span>
-          <h2 class="text-lg font-bold text-slate-900">Rohtas District Approvals</h2>
+          <h2 class="text-base font-bold text-slate-900">Rohtas District Outlets</h2>
         </div>
       </div>
 
@@ -276,7 +238,7 @@
     <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between border-b pb-2">
         <h3 class="font-bold text-slate-900 text-sm">Register Restaurant (Rohtas)</h3>
-        <button onclick="closeModal('register-owner-modal')"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
+        <button type="button" onclick="closeModal('register-owner-modal')" class="text-slate-400 font-bold">✕</button>
       </div>
       <form onsubmit="handleRestaurantRegistration(event)" class="space-y-2.5 text-xs">
         <div>
@@ -308,10 +270,10 @@
           <input type="text" id="reg-address" required class="w-full p-2 border rounded-lg" placeholder="GT Road, Sasaram" />
         </div>
         <div>
-          <label class="block font-semibold text-slate-700">Cuisine Tags (comma separated) *</label>
+          <label class="block font-semibold text-slate-700">Cuisine Tags *</label>
           <input type="text" id="reg-cuisine" required class="w-full p-2 border rounded-lg" placeholder="Bhojpuri Thali, North Indian" />
         </div>
-        <button type="submit" class="w-full bg-brand-600 text-white font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs">Save to Supabase</button>
+        <button type="submit" class="w-full bg-brand-600 text-white font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs">Save Restaurant</button>
       </form>
     </div>
   </div>
@@ -321,7 +283,7 @@
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between border-b pb-2">
         <h3 class="font-bold text-slate-900 text-sm">Review & Confirm Booking</h3>
-        <button onclick="closeModal('booking-modal')"><i data-lucide="x" class="w-5 h-5 text-slate-400"></i></button>
+        <button type="button" onclick="closeModal('booking-modal')" class="text-slate-400 font-bold">✕</button>
       </div>
       <div class="space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border">
         <div class="flex justify-between"><span>Restaurant:</span> <strong id="modal-rest-name" class="text-slate-800">-</strong></div>
@@ -335,28 +297,12 @@
         <label class="block font-semibold text-slate-700">Mobile Number</label>
         <input type="tel" id="cust-input-phone" value="+91 94310 12345" class="w-full p-2 border rounded-lg" />
       </div>
-      <button onclick="executeBooking()" class="w-full bg-brand-600 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider">Confirm Reservation</button>
+      <button type="button" onclick="executeBooking()" class="w-full bg-brand-600 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider">Confirm Reservation</button>
     </div>
   </div>
 
-  <!-- ========================================== -->
-  <!-- JAVASCRIPT LOGIC                           -->
-  <!-- ========================================== -->
   <script>
-    // -------------------------------------------------------------------------
-    // 1. SUPABASE CREDENTIALS (PASTE YOUR COPIED VALUES HERE)
-    // -------------------------------------------------------------------------
-    const SUPABASE_URL = "YOUR_SUPABASE_PROJECT_URL_HERE";
-    const SUPABASE_ANON_KEY = "YOUR_SUPABASE_ANON_KEY_HERE";
-
-    let supabaseClient = null;
-    if (SUPABASE_URL !== "YOUR_SUPABASE_PROJECT_URL_HERE" && SUPABASE_ANON_KEY !== "YOUR_SUPABASE_ANON_KEY_HERE") {
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    }
-
-    // -------------------------------------------------------------------------
-    // 2. FALLBACK ROHTAS DEMO DATA
-    // -------------------------------------------------------------------------
+    // 1. STATE & DATA
     const ROHTAS_LOCALITIES = [
       { id: "sasaram", name_en: "Sasaram", name_hi: "सासाराम", pincode: "821115" },
       { id: "dehri", name_en: "Dehri-on-Sone", name_hi: "डेहरी-ऑन-सोन", pincode: "821307" },
@@ -369,6 +315,401 @@
 
     let dbRestaurants = [
       {
-        id: "rohtas-demo-1",
-        name: "[Demo] Grand Sasaram Family Restaurant",
-  
+        id: "rohtas-1",
+        name: "Grand Sasaram Family Restaurant",
+        owner_name: "Ramesh Singh",
+        locality_id: "sasaram",
+        pincode: "821115",
+        address_line: "Near Sher Shah Suri Tomb, Sasaram",
+        cuisine_tags: ["Bhojpuri Thali", "North Indian"],
+        is_pure_veg: false,
+        is_family_friendly: true,
+        status: "active"
+      },
+      {
+        id: "rohtas-2",
+        name: "Sone View Bhojanalaya",
+        owner_name: "Vikash Gupta",
+        locality_id: "dehri",
+        pincode: "821307",
+        address_line: "Station Road, Dehri-on-Sone",
+        cuisine_tags: ["Pure Veg Thali", "Litti Chokha"],
+        is_pure_veg: true,
+        is_family_friendly: true,
+        status: "active"
+      }
+    ];
+
+    let dbTables = [
+      { id: "t1", restaurant_id: "rohtas-1", table_number: "Table 1 (Family)", capacity: 4, is_operational: true },
+      { id: "t2", restaurant_id: "rohtas-1", table_number: "Table 2 (Window)", capacity: 2, is_operational: true },
+      { id: "t3", restaurant_id: "rohtas-2", table_number: "Table 1", capacity: 4, is_operational: true }
+    ];
+
+    let dbBookings = [
+      {
+        id: "LT-ROH-101",
+        restaurant_id: "rohtas-1",
+        table_id: "t1",
+        guest_name: "Rahul Verma",
+        guest_phone: "+91 94310 11223",
+        booking_date: new Date().toISOString().split('T')[0],
+        booking_time: "07:30 PM",
+        guest_count: 4,
+        status: "confirmed"
+      }
+    ];
+
+    let currentRole = 'customer';
+    let currentLang = 'en';
+    let selectedLocality = 'all';
+    let activeFilter = 'all';
+    let selectedRestaurant = null;
+    let selectedSlot = "07:30 PM";
+    let selectedTable = null;
+
+    const DEFAULT_SLOTS = ["12:00 PM", "01:00 PM", "07:30 PM", "08:30 PM"];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    // 2. INITIALIZATION
+    window.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('booking-date-picker').value = todayStr;
+      document.getElementById('booking-date-picker').min = todayStr;
+      renderLocalityDropdowns();
+      renderRestaurantCards();
+      renderOwnerQueue();
+    });
+
+    // 3. ROLE SWITCHING (Customer, Owner, Admin)
+    function setRole(role) {
+      currentRole = role;
+      
+      document.getElementById('customer-view').classList.toggle('hidden', role !== 'customer');
+      document.getElementById('owner-view').classList.toggle('hidden', role !== 'owner');
+      document.getElementById('admin-view').classList.toggle('hidden', role !== 'admin');
+
+      ['customer', 'owner', 'admin'].forEach(r => {
+        const btn = document.getElementById(`role-btn-${r}`);
+        if (r === role) {
+          btn.className = "px-2.5 py-1 rounded font-bold text-xs bg-brand-600 text-white transition";
+        } else {
+          btn.className = "px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition";
+        }
+      });
+
+      if (role === 'admin') renderAdminDashboard();
+      if (role === 'owner') renderOwnerQueue();
+    }
+
+    // 4. DROPDOWNS & CARDS
+    function renderLocalityDropdowns() {
+      const filterSelect = document.getElementById('locality-filter-select');
+      const regSelect = document.getElementById('reg-block-select');
+
+      filterSelect.innerHTML = `<option value="all">All Rohtas (सभी क्षेत्र)</option>` + 
+        dbLocalities.map(loc => `<option value="${loc.id}">${loc.name_en} (${loc.name_hi})</option>`).join('');
+
+      regSelect.innerHTML = `<option value="">-- Choose Block --</option>` +
+        dbLocalities.map(loc => `<option value="${loc.id}">${loc.name_en} (${loc.pincode})</option>`).join('');
+
+      regSelect.addEventListener('change', function() {
+        const item = dbLocalities.find(l => l.id === this.value);
+        if (item) document.getElementById('reg-pincode').value = item.pincode;
+      });
+    }
+
+    function onLocalityChange(val) {
+      selectedLocality = val;
+      renderRestaurantCards();
+    }
+
+    function filterBy(filter) {
+      activeFilter = filter;
+      renderRestaurantCards();
+    }
+
+    function handleSearch(term) {
+      renderRestaurantCards(term.toLowerCase().trim());
+    }
+
+    function renderRestaurantCards(searchQuery = "") {
+      const target = document.getElementById('restaurant-cards-container');
+      const countEl = document.getElementById('restaurant-count-display');
+
+      let list = dbRestaurants.filter(r => r.status === 'active');
+
+      if (selectedLocality !== 'all') {
+        list = list.filter(r => r.locality_id === selectedLocality);
+      }
+      if (activeFilter === 'veg') list = list.filter(r => r.is_pure_veg);
+      if (activeFilter === 'family') list = list.filter(r => r.is_family_friendly);
+
+      if (searchQuery) {
+        list = list.filter(r => r.name.toLowerCase().includes(searchQuery) || (r.address_line || '').toLowerCase().includes(searchQuery));
+      }
+
+      countEl.innerText = `${list.length} outlets`;
+
+      if (list.length === 0) {
+        target.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-slate-50 border rounded-2xl">No restaurants found in this locality. Register one now!</div>`;
+        return;
+      }
+
+      target.innerHTML = list.map(r => `
+        <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm p-4 space-y-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm">${r.name}</h3>
+              <p class="text-xs text-slate-500">${(r.cuisine_tags || []).join(', ')}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">${r.address_line} (${r.pincode})</p>
+            </div>
+            ${r.is_pure_veg ? '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">PURE VEG</span>' : ''}
+          </div>
+          <button type="button" onclick="startBookingFlow('${r.id}')" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs uppercase transition">
+            Reserve Table
+          </button>
+        </div>
+      `).join('');
+    }
+
+    // 5. BOOKING LOGIC
+    function startBookingFlow(restaurantId) {
+      selectedRestaurant = dbRestaurants.find(r => r.id === restaurantId);
+      selectedTable = null;
+      selectedSlot = DEFAULT_SLOTS[0];
+
+      document.getElementById('restaurant-details-view').innerHTML = `
+        <div class="p-4 bg-slate-900 text-white rounded-2xl">
+          <h2 class="text-sm font-bold">${selectedRestaurant.name}</h2>
+          <p class="text-xs text-slate-300">${selectedRestaurant.address_line}</p>
+        </div>
+      `;
+
+      const slotCont = document.getElementById('time-slot-container');
+      slotCont.innerHTML = DEFAULT_SLOTS.map(s => `
+        <button type="button" onclick="selectSlot('${s}')" class="slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold ${s === selectedSlot ? 'bg-brand-600 text-white' : 'bg-white text-slate-700'}" data-slot="${s}">
+          ${s}
+        </button>
+      `).join('');
+
+      navigateCustomer('details');
+      updateVisualFloorLayout();
+    }
+
+    function selectSlot(slot) {
+      selectedSlot = slot;
+      document.querySelectorAll('.slot-btn').forEach(b => {
+        b.className = b.getAttribute('data-slot') === slot 
+          ? "slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold bg-brand-600 text-white" 
+          : "slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold bg-white text-slate-700";
+      });
+      selectedTable = null;
+      updateVisualFloorLayout();
+    }
+
+    function onBookingParamChange() {
+      selectedTable = null;
+      updateVisualFloorLayout();
+    }
+
+    function updateVisualFloorLayout() {
+      if (!selectedRestaurant) return;
+
+      const date = document.getElementById('booking-date-picker').value;
+      const restTables = dbTables.filter(t => t.restaurant_id === selectedRestaurant.id && t.is_operational);
+      const grid = document.getElementById('floor-layout-grid');
+      const bookBtn = document.getElementById('proceed-booking-btn');
+
+      grid.innerHTML = restTables.map(tbl => {
+        const isBooked = dbBookings.some(b => 
+          b.table_id === tbl.id && 
+          b.booking_date === date && 
+          b.booking_time === selectedSlot && 
+          b.status !== 'cancelled'
+        );
+
+        const isSelected = selectedTable && selectedTable.id === tbl.id;
+
+        if (isBooked) {
+          return `
+            <div class="p-3 rounded-xl border bg-slate-200 text-slate-400 cursor-not-allowed text-center">
+              <span class="font-bold text-xs block">${tbl.table_number}</span>
+              <span class="text-[9px] text-rose-500 font-bold">Booked</span>
+            </div>
+          `;
+        }
+
+        return `
+          <div onclick="selectTable('${tbl.id}')" class="p-3 rounded-xl border cursor-pointer text-center transition ${isSelected ? 'bg-brand-500 text-white ring-2 ring-brand-300' : 'bg-white hover:border-brand-500'}">
+            <span class="font-bold text-xs block">${tbl.table_number}</span>
+            <span class="text-[9px] opacity-80">${tbl.capacity} Seats</span>
+          </div>
+        `;
+      }).join('');
+
+      if (selectedTable) {
+        bookBtn.disabled = false;
+        bookBtn.className = "w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase cursor-pointer transition";
+        bookBtn.innerText = `Continue with ${selectedTable.table_number}`;
+      } else {
+        bookBtn.disabled = true;
+        bookBtn.className = "w-full bg-slate-300 text-slate-500 font-bold py-3 px-4 rounded-xl text-xs uppercase cursor-not-allowed";
+        bookBtn.innerText = "Select an Available Table";
+      }
+    }
+
+    function selectTable(id) {
+      selectedTable = dbTables.find(t => t.id === id);
+      updateVisualFloorLayout();
+    }
+
+    function confirmBookingModal() {
+      document.getElementById('modal-rest-name').innerText = selectedRestaurant.name;
+      document.getElementById('modal-datetime').innerText = `${document.getElementById('booking-date-picker').value} @ ${selectedSlot}`;
+      document.getElementById('modal-guests').innerText = `${document.getElementById('booking-guests-picker').value} Guests`;
+      document.getElementById('modal-table').innerText = selectedTable.table_number;
+
+      const m = document.getElementById('booking-modal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function executeBooking() {
+      const date = document.getElementById('booking-date-picker').value;
+      const guests = parseInt(document.getElementById('booking-guests-picker').value, 10);
+      const name = document.getElementById('cust-input-name').value.trim() || 'Guest';
+      const phone = document.getElementById('cust-input-phone').value.trim() || '9431000000';
+      const bookingId = "LT-ROH-" + Math.floor(100 + Math.random() * 900);
+
+      dbBookings.push({
+        id: bookingId,
+        restaurant_id: selectedRestaurant.id,
+        table_id: selectedTable.id,
+        guest_name: name,
+        guest_phone: phone,
+        booking_date: date,
+        booking_time: selectedSlot,
+        guest_count: guests,
+        status: 'confirmed'
+      });
+
+      alert("Table Reserved Successfully! Booking ID: " + bookingId);
+      closeModal('booking-modal');
+      navigateCustomer('bookings');
+    }
+
+    // 6. OWNER & ADMIN QUEUES
+    function renderOwnerQueue() {
+      const cont = document.getElementById('owner-booking-queue');
+      cont.innerHTML = dbBookings.map(b => `
+        <div class="p-3 border rounded-xl bg-white space-y-1 text-xs">
+          <div class="flex justify-between font-bold">
+            <span>${b.guest_name} (${b.guest_phone})</span>
+            <span class="text-emerald-600 uppercase">${b.status}</span>
+          </div>
+          <p class="text-slate-500">${b.booking_date} @ ${b.booking_time} (${b.guest_count} Guests)</p>
+        </div>
+      `).join('');
+    }
+
+    function openRegisterOwnerModal() {
+      const m = document.getElementById('register-owner-modal');
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+    }
+
+    function handleRestaurantRegistration(event) {
+      event.preventDefault();
+      const name = document.getElementById('reg-rest-name').value;
+      const owner = document.getElementById('reg-owner-name').value;
+      const phone = document.getElementById('reg-mobile').value;
+      const block = document.getElementById('reg-block-select').value;
+      const pin = document.getElementById('reg-pincode').value;
+      const address = document.getElementById('reg-address').value;
+      const cuisine = document.getElementById('reg-cuisine').value.split(',').map(s => s.trim());
+
+      const newId = "rest-" + Date.now();
+      dbRestaurants.push({
+        id: newId,
+        name: name,
+        owner_name: owner,
+        owner_phone: phone,
+        locality_id: block,
+        pincode: pin,
+        address_line: address,
+        cuisine_tags: cuisine,
+        status: 'pending_approval'
+      });
+
+      dbTables.push({ id: "t-" + Date.now(), restaurant_id: newId, table_number: "Table 1 (Family)", capacity: 4, is_operational: true });
+
+      alert("Restaurant submitted! Switch to 'Admin' tab to approve it.");
+      closeModal('register-owner-modal');
+      renderAdminDashboard();
+    }
+
+    function renderAdminDashboard() {
+      const tbody = document.getElementById('admin-restaurant-tbody');
+      tbody.innerHTML = dbRestaurants.map(r => `
+        <tr class="border-b">
+          <td class="p-2.5 font-bold">${r.name}</td>
+          <td class="p-2.5">${r.locality_id}</td>
+          <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${r.status}</span></td>
+          <td class="p-2.5 text-right">
+            ${r.status === 'pending_approval' ? `<button type="button" onclick="approveRestaurant('${r.id}')" class="px-2 py-1 bg-emerald-600 text-white rounded font-bold text-[10px]">Approve</button>` : '—'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function approveRestaurant(id) {
+      const r = dbRestaurants.find(item => item.id === id);
+      if (r) r.status = 'active';
+      renderAdminDashboard();
+      renderRestaurantCards();
+    }
+
+    // 7. NAVIGATION
+    function navigateCustomer(screen) {
+      ['home', 'details', 'bookings'].forEach(s => {
+        document.getElementById(`cust-screen-${s}`).classList.toggle('hidden', s !== screen);
+      });
+      if (screen === 'bookings') renderCustomerBookings();
+    }
+
+    function renderCustomerBookings() {
+      const cont = document.getElementById('my-bookings-list');
+      if (dbBookings.length === 0) {
+        cont.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">No bookings yet.</div>`;
+        return;
+      }
+      cont.innerHTML = dbBookings.map(b => `
+        <div class="p-3 border rounded-xl bg-white space-y-1 text-xs">
+          <div class="flex justify-between font-bold">
+            <span>Booking #${b.id}</span>
+            <span class="text-emerald-600 uppercase">${b.status}</span>
+          </div>
+          <p class="text-slate-500">${b.booking_date} @ ${b.booking_time} (${b.guest_count} Guests)</p>
+        </div>
+      `).join('');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.add('hidden');
+      document.getElementById(id).classList.remove('flex');
+    }
+
+    function triggerNearbyGps() {
+      alert("GPS active: Showing restaurants near Sasaram.");
+      selectedLocality = 'sasaram';
+      document.getElementById('locality-filter-select').value = 'sasaram';
+      renderRestaurantCards();
+    }
+
+    function toggleLang() {
+      currentLang = currentLang === 'en' ? 'hi' : 'en';
+      document.getElementById('current-lang-label').innerText = currentLang === 'en' ? 'हिन्दी' : 'English';
+    }
+  </script>
+</body>
+</html>
