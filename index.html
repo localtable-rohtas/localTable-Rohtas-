@@ -1,341 +1,15 @@
-
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>LocalTable Rohtas | लोकल टेबल रोहतास</title>
-  <link rel="manifest" href="/manifest.json" />
-  <meta name="theme-color" content="#ea580c" />
-  <meta name="mobile-web-app-capable" content="yes" />
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3170/3170733.png" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    // PWA Service Worker Registration
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js');
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch((err) => console.log('SW error:', err));
+      });
     }
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#fff7ed',
-              100: '#ffedd5',
-              500: '#ea580c',
-              600: '#c2410c',
-              700: '#9a3412',
-            }
-          }
-        }
-      }
-    }
-  </script>
-</head>
-<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between select-none">
 
-  <!-- TOP BAR -->
-  <header class="bg-slate-900 text-white text-xs px-3 py-2 flex flex-wrap items-center justify-between gap-2 shadow-md sticky top-0 z-50">
-    <div class="flex items-center gap-2">
-      <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-      <div>
-        <span class="font-bold tracking-wide text-brand-500 uppercase">LocalTable</span>
-        <span class="text-[10px] text-slate-400 ml-1">रोहतास (बिहार)</span>
-      </div>
-    </div>
-
-    <div class="flex items-center gap-2">
-      <!-- Role Switcher -->
-      <div class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
-        <button type="button" onclick="setRole('customer')" id="role-btn-customer" class="px-2.5 py-1 rounded font-bold text-xs bg-brand-600 text-white transition">Customer</button>
-        <button type="button" onclick="requestRoleAccess('owner')" id="role-btn-owner" class="px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition">Owner 🔒</button>
-        <button type="button" onclick="requestRoleAccess('admin')" id="role-btn-admin" class="px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition">Admin 🔒</button>
-      </div>
-
-      <!-- Language Toggle -->
-      <button type="button" onclick="toggleLang()" class="flex items-center gap-1 bg-brand-600 px-2.5 py-1 rounded text-white font-semibold text-xs">
-        <span id="current-lang-label">हिन्दी</span>
-      </button>
-    </div>
-  </header>
-
-  <!-- MAIN APP CONTAINER -->
-  <main class="w-full max-w-4xl mx-auto bg-white min-h-[calc(100vh-70px)] flex flex-col shadow-xl relative pb-16">
-
-    <!-- 1. CUSTOMER PORTAL -->
-    <div id="customer-view" class="flex-1 flex flex-col">
-      <section id="cust-screen-home" class="p-4 space-y-4 flex-1">
-        
-        <!-- Rohtas Location Selector Box -->
-        <div class="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3.5 space-y-2.5">
-          <div class="flex items-center justify-between">
-            <div class="text-xs font-bold text-orange-900">📍 Select Location (Rohtas, Bihar)</div>
-            <button type="button" onclick="triggerNearbyGps()" class="text-[11px] font-semibold text-brand-600 bg-white border border-orange-200 px-2 py-1 rounded-md">
-              🎯 Nearby (GPS)
-            </button>
-          </div>
-
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-            <div>
-              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">District</label>
-              <div class="p-2 bg-white rounded-lg border border-slate-200 font-semibold text-slate-700 flex items-center justify-between">
-                <span>Rohtas (रोहतास)</span>
-                <span class="text-[10px] text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded font-bold">Bihar</span>
-              </div>
-            </div>
-            <div>
-              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">City / Town / Block</label>
-              <select id="locality-filter-select" onchange="onLocalityChange(this.value)" class="w-full p-2 bg-white rounded-lg border border-slate-200 font-medium text-slate-800">
-                <option value="all">All Rohtas (सभी क्षेत्र)</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <!-- Search Bar -->
-        <input 
-          type="text" 
-          id="search-input" 
-          oninput="handleSearch(this.value)" 
-          placeholder="🔍 Search restaurant, cuisine, or area in Rohtas..." 
-          class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-brand-500"
-        />
-
-        <!-- Quick Filters -->
-        <div class="flex items-center gap-2 overflow-x-auto py-1">
-          <button type="button" onclick="filterBy('all')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border bg-slate-900 text-white whitespace-nowrap" data-filter="all">All</button>
-          <button type="button" onclick="filterBy('veg')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 bg-white text-slate-700 whitespace-nowrap" data-filter="veg">Pure Veg</button>
-          <button type="button" onclick="filterBy('family')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 bg-white text-slate-700 whitespace-nowrap" data-filter="family">Family Dine</button>
-        </div>
-
-        <!-- Callout Banner -->
-        <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-3.5 flex items-center justify-between shadow-md">
-          <div class="space-y-0.5">
-            <h4 class="text-xs font-bold text-orange-400">Own a Restaurant in Rohtas?</h4>
-            <p class="text-[11px] text-slate-300">Add your outlet to the local reservation network.</p>
-          </div>
-          <button type="button" onclick="openRegisterOwnerModal()" class="bg-brand-600 hover:bg-brand-700 text-white px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap">
-            Register Now
-          </button>
-        </div>
-
-        <!-- Active Filter Indicator -->
-        <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
-          <span id="current-locality-display" class="font-semibold text-slate-700">Showing verified restaurants</span>
-          <span id="restaurant-count-display" class="text-[11px] bg-slate-100 px-2 py-0.5 rounded-full font-bold">2 found</span>
-        </div>
-
-        <!-- Restaurant Listing Container -->
-        <div class="space-y-4" id="restaurant-cards-container"></div>
-      </section>
-
-      <!-- RESTAURANT DETAILS & TABLE RESERVATION -->
-      <section id="cust-screen-details" class="hidden flex-1 flex flex-col p-4 space-y-4">
-        <button type="button" onclick="navigateCustomer('home')" class="text-xs font-semibold text-brand-600 flex items-center gap-1">
-          ← Back to Outlets
-        </button>
-
-        <div id="restaurant-details-view" class="space-y-2"></div>
-
-        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 space-y-4">
-          <h3 class="font-bold text-slate-900 text-xs uppercase tracking-wider border-b pb-2">Choose Reservation Details</h3>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Date</label>
-              <input type="date" id="booking-date-picker" onchange="onBookingParamChange()" class="w-full text-xs p-2 border rounded-lg bg-white" />
-            </div>
-            <div>
-              <label class="block text-xs font-semibold text-slate-600 mb-1">Guests</label>
-              <select id="booking-guests-picker" onchange="onBookingParamChange()" class="w-full text-xs p-2 border rounded-lg bg-white">
-                <option value="1">1 Person</option>
-                <option value="2" selected>2 Guests</option>
-                <option value="4">4 Guests</option>
-                <option value="6">6 Guests</option>
-              </select>
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Select Time Slot</label>
-            <div id="time-slot-container" class="flex gap-2 overflow-x-auto py-1"></div>
-          </div>
-        </div>
-
-        <!-- VISUAL FLOOR PLAN -->
-        <div class="space-y-2">
-          <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Select Your Table</span>
-          <div class="bg-slate-100 border border-dashed border-slate-300 rounded-2xl p-4 text-center">
-            <div class="text-[10px] uppercase font-bold text-slate-400 mb-3 tracking-widest">Kitchen & Reception Counter</div>
-            <div id="floor-layout-grid" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
-            <div class="text-[10px] uppercase font-bold text-slate-400 mt-4 tracking-widest">Main Entrance</div>
-          </div>
-        </div>
-
-        <button 
-          id="proceed-booking-btn" 
-          type="button" 
-          onclick="confirmBookingModal()" 
-          disabled 
-          class="w-full bg-slate-300 text-slate-500 font-bold py-3 px-4 rounded-xl text-xs uppercase cursor-not-allowed transition"
-        >
-          Select an Available Table
-        </button>
-      </section>
-
-      <!-- MY BOOKINGS -->
-      <section id="cust-screen-bookings" class="hidden flex-1 p-4 space-y-4">
-        <h2 class="text-base font-bold text-slate-900">My Reservations</h2>
-        <div id="my-bookings-list" class="space-y-3"></div>
-      </section>
-
-      <!-- BOTTOM NAV -->
-      <nav class="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto bg-white border-t border-slate-200 px-6 py-2.5 flex items-center justify-around z-40">
-        <button type="button" onclick="navigateCustomer('home')" id="cust-nav-home" class="font-bold text-xs text-brand-600">
-          Explore
-        </button>
-        <button type="button" onclick="navigateCustomer('bookings')" id="cust-nav-bookings" class="font-bold text-xs text-slate-400 hover:text-slate-700">
-          Bookings
-        </button>
-      </nav>
-    </div>
-
-    <!-- 2. OWNER DASHBOARD (LOCKED) -->
-    <div id="owner-view" class="hidden flex-1 flex flex-col p-4 space-y-4">
-      <div class="flex items-center justify-between border-b pb-3">
-        <div>
-          <span class="text-xs font-semibold text-brand-600 uppercase tracking-wider">Owner Portal (Verified)</span>
-          <h2 class="text-base font-bold text-slate-900">Grand Sasaram Family Restaurant</h2>
-        </div>
-        <button type="button" onclick="logoutRole()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded">Lock / Logout</button>
-      </div>
-
-      <div class="space-y-3">
-        <h3 class="text-xs font-bold text-slate-700 uppercase">Live Reservations Queue</h3>
-        <div id="owner-booking-queue" class="space-y-2"></div>
-      </div>
-    </div>
-
-    <!-- 3. ADMIN PANEL (LOCKED) -->
-    <div id="admin-view" class="hidden flex-1 flex flex-col p-4 space-y-4">
-      <div class="flex items-center justify-between border-b pb-3">
-        <div>
-          <span class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Superadmin Panel (Secure)</span>
-          <h2 class="text-base font-bold text-slate-900">Rohtas District Outlets</h2>
-        </div>
-        <button type="button" onclick="logoutRole()" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1 rounded">Lock / Logout</button>
-      </div>
-
-      <div class="border rounded-xl overflow-hidden bg-white shadow-sm">
-        <table class="w-full text-left text-xs text-slate-600">
-          <thead class="bg-slate-100 text-slate-700 font-bold border-b">
-            <tr>
-              <th class="p-2.5">Restaurant</th>
-              <th class="p-2.5">Block</th>
-              <th class="p-2.5">Status</th>
-              <th class="p-2.5 text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody id="admin-restaurant-tbody" class="divide-y divide-slate-100"></tbody>
-        </table>
-      </div>
-    </div>
-  </main>
-
-  <!-- MODAL: PIN AUTHENTICATION -->
-  <div id="pin-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl text-center">
-      <div class="w-12 h-12 bg-orange-100 text-brand-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">🔒</div>
-      <div>
-        <h3 id="pin-modal-title" class="font-bold text-slate-900 text-sm">Security PIN Required</h3>
-        <p id="pin-modal-desc" class="text-xs text-slate-500 mt-1">Enter PIN to access restricted area</p>
-      </div>
-      <input type="password" id="input-pin-code" maxlength="6" placeholder="Enter PIN" class="w-full p-2.5 text-center text-lg tracking-widest border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 font-bold" />
-      <div class="flex gap-2">
-        <button type="button" onclick="closeModal('pin-modal')" class="w-1/2 bg-slate-100 font-semibold py-2 rounded-xl text-xs text-slate-700">Cancel</button>
-        <button type="button" onclick="verifyPinSubmission()" class="w-1/2 bg-brand-600 hover:bg-brand-700 font-bold py-2 rounded-xl text-xs text-white">Unlock</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL: REGISTER OWNER -->
-  <div id="register-owner-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
-      <div class="flex items-center justify-between border-b pb-2">
-        <h3 class="font-bold text-slate-900 text-sm">Register Restaurant (Rohtas)</h3>
-        <button type="button" onclick="closeModal('register-owner-modal')" class="text-slate-400 font-bold">✕</button>
-      </div>
-      <form onsubmit="handleRestaurantRegistration(event)" class="space-y-2.5 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-700">Restaurant Name *</label>
-          <input type="text" id="reg-rest-name" required class="w-full p-2 border rounded-lg" placeholder="e.g. Sone Valley Family Dine" />
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block font-semibold text-slate-700">Owner Name *</label>
-            <input type="text" id="reg-owner-name" required class="w-full p-2 border rounded-lg" />
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-700">Mobile Number (10 digits) *</label>
-            <input type="tel" id="reg-mobile" pattern="[6-9][0-9]{9}" maxlength="10" required class="w-full p-2 border rounded-lg" placeholder="94310XXXXX" />
-          </div>
-        </div>
-        <div class="grid grid-cols-2 gap-2">
-          <div>
-            <label class="block font-semibold text-slate-700">Block / Locality *</label>
-            <select id="reg-block-select" required class="w-full p-2 border rounded-lg bg-white"></select>
-          </div>
-          <div>
-            <label class="block font-semibold text-slate-700">PIN Code *</label>
-            <input type="text" id="reg-pincode" required class="w-full p-2 border rounded-lg" placeholder="821115" />
-          </div>
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-700">Address Line *</label>
-          <input type="text" id="reg-address" required class="w-full p-2 border rounded-lg" placeholder="GT Road, Sasaram" />
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-700">Cuisine Tags *</label>
-          <input type="text" id="reg-cuisine" required class="w-full p-2 border rounded-lg" placeholder="Bhojpuri Thali, North Indian" />
-        </div>
-        <button type="submit" class="w-full bg-brand-600 text-white font-bold py-2.5 rounded-xl uppercase tracking-wider text-xs">Save Restaurant</button>
-      </form>
-    </div>
-  </div>
-
-  <!-- MODAL: CONFIRM BOOKING -->
-  <div id="booking-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
-      <div class="flex items-center justify-between border-b pb-2">
-        <h3 class="font-bold text-slate-900 text-sm">Review & Confirm Booking</h3>
-        <button type="button" onclick="closeModal('booking-modal')" class="text-slate-400 font-bold">✕</button>
-      </div>
-      <div class="space-y-1.5 text-xs text-slate-600 bg-slate-50 p-3 rounded-xl border">
-        <div class="flex justify-between"><span>Restaurant:</span> <strong id="modal-rest-name" class="text-slate-800">-</strong></div>
-        <div class="flex justify-between"><span>Date & Slot:</span> <strong id="modal-datetime" class="text-slate-800">-</strong></div>
-        <div class="flex justify-between"><span>Guests:</span> <strong id="modal-guests" class="text-slate-800">-</strong></div>
-        <div class="flex justify-between"><span>Allocated Table:</span> <strong id="modal-table" class="text-brand-600">-</strong></div>
-      </div>
-      <div class="space-y-2 text-xs">
-        <div>
-          <label class="block font-semibold text-slate-700">Your Full Name *</label>
-          <input type="text" id="cust-input-name" required placeholder="अपना नाम दर्ज करें" class="w-full p-2 border rounded-lg" />
-        </div>
-        <div>
-          <label class="block font-semibold text-slate-700">Mobile Number (10 digits) *</label>
-          <input type="tel" id="cust-input-phone" maxlength="10" placeholder="10 अंकों का मोबाइल नंबर" class="w-full p-2 border rounded-lg font-mono" />
-          <span class="text-[10px] text-slate-400">फर्जी बुकिंग रोकने के लिए सही नंबर आवश्यक है</span>
-        </div>
-      </div>
-      <button type="button" onclick="executeBooking()" class="w-full bg-brand-600 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider">Confirm Reservation</button>
-    </div>
-  </div>
-
-  <script>
-    // SECURITY CONFIG
+    // Security PIN Config
     const SECURITY_PINS = {
-      admin: "2006", // आपका एडमिन पिन
-      owner: "2008"  // रेस्टोरेंट ओनर पिन
+      admin: "2006",
+      owner: "2008"
     };
 
     let authenticatedRoles = {
@@ -345,7 +19,7 @@
 
     let targetRoleToUnlock = null;
 
-    // DATA STATE
+    // Database Mock
     const ROHTAS_LOCALITIES = [
       { id: "sasaram", name_en: "Sasaram", name_hi: "सासाराम", pincode: "821115" },
       { id: "dehri", name_en: "Dehri-on-Sone", name_hi: "डेहरी-ऑन-सोन", pincode: "821307" },
@@ -360,6 +34,7 @@
         id: "rohtas-1",
         name: "Grand Sasaram Family Restaurant",
         owner_name: "Ramesh Singh",
+        owner_phone: "919431011223",
         locality_id: "sasaram",
         pincode: "821115",
         address_line: "Near Sher Shah Suri Tomb, Sasaram",
@@ -372,6 +47,7 @@
         id: "rohtas-2",
         name: "Sone View Bhojanalaya",
         owner_name: "Vikash Gupta",
+        owner_phone: "919431099887",
         locality_id: "dehri",
         pincode: "821307",
         address_line: "Station Road, Dehri-on-Sone",
@@ -383,4 +59,448 @@
     ];
 
     let dbTables = [
-      { id: 
+      { id: "t1", restaurant_id: "rohtas-1", table_number: "Table 1 (Family)", capacity: 4, is_operational: true },
+      { id: "t2", restaurant_id: "rohtas-1", table_number: "Table 2 (Window)", capacity: 2, is_operational: true },
+      { id: "t3", restaurant_id: "rohtas-2", table_number: "Table 1", capacity: 4, is_operational: true }
+    ];
+
+    let dbBookings = [
+      {
+        id: "LT-ROH-101",
+        restaurant_id: "rohtas-1",
+        table_id: "t1",
+        guest_name: "Rahul Verma",
+        guest_phone: "9431011223",
+        booking_date: new Date().toISOString().split('T')[0],
+        booking_time: "07:30 PM",
+        guest_count: 4,
+        status: "confirmed"
+      }
+    ];
+
+    let currentRole = 'customer';
+    let currentLang = 'en';
+    let selectedLocality = 'all';
+    let activeFilter = 'all';
+    let selectedRestaurant = null;
+    let selectedSlot = "07:30 PM";
+    let selectedTable = null;
+
+    const DEFAULT_SLOTS = ["12:00 PM", "01:00 PM", "07:30 PM", "08:30 PM"];
+    const todayStr = new Date().toISOString().split('T')[0];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const dp = document.getElementById('booking-date-picker');
+      if (dp) {
+        dp.value = todayStr;
+        dp.min = todayStr;
+      }
+      renderLocalityDropdowns();
+      renderRestaurantCards();
+      renderOwnerQueue();
+    });
+
+    // Pin Authentication Functions
+    function requestRoleAccess(role) {
+      if (authenticatedRoles[role]) {
+        setRole(role);
+      } else {
+        targetRoleToUnlock = role;
+        const titleEl = document.getElementById('pin-modal-title');
+        const descEl = document.getElementById('pin-modal-desc');
+        const inputEl = document.getElementById('input-pin-code');
+        if (titleEl) titleEl.innerText = `${role.toUpperCase()} Authentication`;
+        if (descEl) descEl.innerText = `Enter secret PIN to access ${role} portal`;
+        if (inputEl) inputEl.value = '';
+        const modal = document.getElementById('pin-modal');
+        if (modal) {
+          modal.classList.remove('hidden');
+          modal.classList.add('flex');
+        }
+        if (inputEl) inputEl.focus();
+      }
+    }
+
+    function verifyPinSubmission() {
+      const inputEl = document.getElementById('input-pin-code');
+      const entered = inputEl ? inputEl.value.trim() : '';
+      if (entered === SECURITY_PINS[targetRoleToUnlock]) {
+        authenticatedRoles[targetRoleToUnlock] = true;
+        closeModal('pin-modal');
+        setRole(targetRoleToUnlock);
+      } else {
+        alert("गलत पिन! (Incorrect PIN)");
+        if (inputEl) inputEl.value = '';
+      }
+    }
+
+    function logoutRole() {
+      authenticatedRoles.admin = false;
+      authenticatedRoles.owner = false;
+      setRole('customer');
+      alert("Portal Locked Successfully.");
+    }
+
+    function setRole(role) {
+      currentRole = role;
+      const cv = document.getElementById('customer-view');
+      const ov = document.getElementById('owner-view');
+      const av = document.getElementById('admin-view');
+      if (cv) cv.classList.toggle('hidden', role !== 'customer');
+      if (ov) ov.classList.toggle('hidden', role !== 'owner');
+      if (av) av.classList.toggle('hidden', role !== 'admin');
+
+      ['customer', 'owner', 'admin'].forEach(r => {
+        const btn = document.getElementById(`role-btn-${r}`);
+        if (btn) {
+          if (r === role) {
+            btn.className = "px-2.5 py-1 rounded font-bold text-xs bg-brand-600 text-white transition";
+          } else {
+            btn.className = "px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition";
+          }
+        }
+      });
+
+      if (role === 'admin') renderAdminDashboard();
+      if (role === 'owner') renderOwnerQueue();
+    }
+
+    function renderLocalityDropdowns() {
+      const filterSelect = document.getElementById('locality-filter-select');
+      const regSelect = document.getElementById('reg-block-select');
+
+      if (filterSelect) {
+        filterSelect.innerHTML = `<option value="all">All Rohtas (सभी क्षेत्र)</option>` + 
+          dbLocalities.map(loc => `<option value="${loc.id}">${loc.name_en} (${loc.name_hi})</option>`).join('');
+      }
+
+      if (regSelect) {
+        regSelect.innerHTML = `<option value="">-- Choose Block --</option>` +
+          dbLocalities.map(loc => `<option value="${loc.id}">${loc.name_en} (${loc.pincode})</option>`).join('');
+
+        regSelect.onchange = function() {
+          const item = dbLocalities.find(l => l.id === this.value);
+          const pinField = document.getElementById('reg-pincode');
+          if (item && pinField) pinField.value = item.pincode;
+        };
+      }
+    }
+
+    function onLocalityChange(val) {
+      selectedLocality = val;
+      renderRestaurantCards();
+    }
+
+    function filterBy(filter) {
+      activeFilter = filter;
+      renderRestaurantCards();
+    }
+
+    function handleSearch(term) {
+      renderRestaurantCards(term.toLowerCase().trim());
+    }
+
+    function renderRestaurantCards(searchQuery = "") {
+      const target = document.getElementById('restaurant-cards-container');
+      const countEl = document.getElementById('restaurant-count-display');
+      if (!target) return;
+
+      let list = dbRestaurants.filter(r => r.status === 'active');
+      if (selectedLocality !== 'all') list = list.filter(r => r.locality_id === selectedLocality);
+      if (activeFilter === 'veg') list = list.filter(r => r.is_pure_veg);
+      if (activeFilter === 'family') list = list.filter(r => r.is_family_friendly);
+      if (searchQuery) {
+        list = list.filter(r => r.name.toLowerCase().includes(searchQuery) || (r.address_line || '').toLowerCase().includes(searchQuery));
+      }
+
+      if (countEl) countEl.innerText = `${list.length} outlets`;
+
+      if (list.length === 0) {
+        target.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-slate-50 border rounded-2xl">No restaurants found in this locality. Register one now!</div>`;
+        return;
+      }
+
+      target.innerHTML = list.map(r => `
+        <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm p-4 space-y-2">
+          <div class="flex justify-between items-start">
+            <div>
+              <h3 class="font-bold text-slate-900 text-sm">${r.name}</h3>
+              <p class="text-xs text-slate-500">${(r.cuisine_tags || []).join(', ')}</p>
+              <p class="text-[11px] text-slate-400 mt-0.5">${r.address_line} (${r.pincode})</p>
+            </div>
+            ${r.is_pure_veg ? '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">PURE VEG</span>' : ''}
+          </div>
+          <button type="button" onclick="startBookingFlow('${r.id}')" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs uppercase transition">
+            Reserve Table
+          </button>
+        </div>
+      `).join('');
+    }
+
+    function startBookingFlow(restaurantId) {
+      selectedRestaurant = dbRestaurants.find(r => r.id === restaurantId);
+      selectedTable = null;
+      selectedSlot = DEFAULT_SLOTS[0];
+
+      const detView = document.getElementById('restaurant-details-view');
+      if (detView && selectedRestaurant) {
+        detView.innerHTML = `
+          <div class="p-4 bg-slate-900 text-white rounded-2xl">
+            <h2 class="text-sm font-bold">${selectedRestaurant.name}</h2>
+            <p class="text-xs text-slate-300">${selectedRestaurant.address_line}</p>
+          </div>
+        `;
+      }
+
+      const slotCont = document.getElementById('time-slot-container');
+      if (slotCont) {
+        slotCont.innerHTML = DEFAULT_SLOTS.map(s => `
+          <button type="button" onclick="selectSlot('${s}')" class="slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold ${s === selectedSlot ? 'bg-brand-600 text-white' : 'bg-white text-slate-700'}" data-slot="${s}">
+            ${s}
+          </button>
+        `).join('');
+      }
+
+      navigateCustomer('details');
+      updateVisualFloorLayout();
+    }
+
+    function selectSlot(slot) {
+      selectedSlot = slot;
+      document.querySelectorAll('.slot-btn').forEach(b => {
+        b.className = b.getAttribute('data-slot') === slot 
+          ? "slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold bg-brand-600 text-white" 
+          : "slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold bg-white text-slate-700";
+      });
+      selectedTable = null;
+      updateVisualFloorLayout();
+    }
+
+    function onBookingParamChange() {
+      selectedTable = null;
+      updateVisualFloorLayout();
+    }
+
+    function updateVisualFloorLayout() {
+      if (!selectedRestaurant) return;
+      const dp = document.getElementById('booking-date-picker');
+      const date = dp ? dp.value : todayStr;
+      const restTables = dbTables.filter(t => t.restaurant_id === selectedRestaurant.id && t.is_operational);
+      const grid = document.getElementById('floor-layout-grid');
+      const bookBtn = document.getElementById('proceed-booking-btn');
+      if (!grid) return;
+
+      grid.innerHTML = restTables.map(tbl => {
+        const isBooked = dbBookings.some(b => 
+          b.table_id === tbl.id && 
+          b.booking_date === date && 
+          b.booking_time === selectedSlot && 
+          b.status !== 'cancelled'
+        );
+
+        const isSelected = selectedTable && selectedTable.id === tbl.id;
+
+        if (isBooked) {
+          return `
+            <div class="p-3 rounded-xl border bg-slate-200 text-slate-400 cursor-not-allowed text-center">
+              <span class="font-bold text-xs block">${tbl.table_number}</span>
+              <span class="text-[9px] text-rose-500 font-bold">Booked</span>
+            </div>
+          `;
+        }
+
+        return `
+          <div onclick="selectTable('${tbl.id}')" class="p-3 rounded-xl border cursor-pointer text-center transition ${isSelected ? 'bg-brand-500 text-white ring-2 ring-brand-300' : 'bg-white hover:border-brand-500'}">
+            <span class="font-bold text-xs block">${tbl.table_number}</span>
+            <span class="text-[9px] opacity-80">${tbl.capacity} Seats</span>
+          </div>
+        `;
+      }).join('');
+
+      if (bookBtn) {
+        if (selectedTable) {
+          bookBtn.disabled = false;
+          bookBtn.className = "w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase cursor-pointer transition";
+          bookBtn.innerText = `Continue with ${selectedTable.table_number}`;
+        } else {
+          bookBtn.disabled = true;
+          bookBtn.className = "w-full bg-slate-300 text-slate-500 font-bold py-3 px-4 rounded-xl text-xs uppercase cursor-not-allowed";
+          bookBtn.innerText = "Select an Available Table";
+        }
+      }
+    }
+
+    function selectTable(id) {
+      selectedTable = dbTables.find(t => t.id === id);
+      updateVisualFloorLayout();
+    }
+
+    function confirmBookingModal() {
+      const restNameEl = document.getElementById('modal-rest-name');
+      const dtEl = document.getElementById('modal-datetime');
+      const guestsEl = document.getElementById('modal-guests');
+      const tblEl = document.getElementById('modal-table');
+      const dp = document.getElementById('booking-date-picker');
+      const gp = document.getElementById('booking-guests-picker');
+
+      if (restNameEl && selectedRestaurant) restNameEl.innerText = selectedRestaurant.name;
+      if (dtEl && dp) dtEl.innerText = `${dp.value} @ ${selectedSlot}`;
+      if (guestsEl && gp) guestsEl.innerText = `${gp.value} Guests`;
+      if (tblEl && selectedTable) tblEl.innerText = selectedTable.table_number;
+
+      const m = document.getElementById('booking-modal');
+      if (m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+      }
+    }
+
+    function executeBooking() {
+      const dp = document.getElementById('booking-date-picker');
+      const gp = document.getElementById('booking-guests-picker');
+      const nameInput = document.getElementById('cust-input-name');
+      const phoneInput = document.getElementById('cust-input-phone');
+
+      const date = dp ? dp.value : todayStr;
+      const guests = gp ? parseInt(gp.value, 10) : 2;
+      const name = nameInput ? nameInput.value.trim() : '';
+      const rawPhone = phoneInput ? phoneInput.value.trim() : '';
+
+      const phoneRegex = /^[6-9]\d{9}$/;
+      if (!name || name.length < 2) {
+        alert("कृपया अपना सही नाम दर्ज करें।");
+        return;
+      }
+      if (!phoneRegex.test(rawPhone)) {
+        alert("अमान्य मोबाइल नंबर! 10 अंकों का सही भारतीय मोबाइल नंबर दर्ज करें।");
+        return;
+      }
+
+      const bookingId = "LT-ROH-" + Math.floor(100 + Math.random() * 900);
+      const bookingObj = {
+        id: bookingId,
+        restaurant_id: selectedRestaurant ? selectedRestaurant.id : '',
+        table_id: selectedTable ? selectedTable.id : '',
+        guest_name: name,
+        guest_phone: rawPhone,
+        booking_date: date,
+        booking_time: selectedSlot,
+        guest_count: guests,
+        status: 'confirmed'
+      };
+
+      dbBookings.push(bookingObj);
+      closeModal('booking-modal');
+
+      const targetPhone = (selectedRestaurant && selectedRestaurant.owner_phone) ? selectedRestaurant.owner_phone.replace(/\D/g, '') : "919431011223";
+      const messageText = `🍽️ *New Reservation - LocalTable Rohtas*\n\n` +
+                          `🆔 *Booking ID:* ${bookingId}\n` +
+                          `🏨 *Restaurant:* ${selectedRestaurant ? selectedRestaurant.name : ''}\n` +
+                          `👤 *Guest Name:* ${name}\n` +
+                          `📞 *Phone:* ${rawPhone}\n` +
+                          `📅 *Date:* ${date}\n` +
+                          `⏰ *Time Slot:* ${selectedSlot}\n` +
+                          `🪑 *Table:* ${selectedTable ? selectedTable.table_number : ''} (${guests} Guests)\n\n` +
+                          `_Sent via LocalTable Rohtas_`;
+
+      const encodedMsg = encodeURIComponent(messageText);
+      const waUrl = `https://wa.me/${targetPhone}?text=${encodedMsg}`;
+
+      const sumEl = document.getElementById('success-booking-summary');
+      const waBtn = document.getElementById('whatsapp-notify-btn');
+      if (sumEl && selectedRestaurant && selectedTable) {
+        sumEl.innerText = `ID: ${bookingId} | ${selectedRestaurant.name} (${selectedTable.table_number})`;
+      }
+      if (waBtn) waBtn.href = waUrl;
+
+      const successModal = document.getElementById('success-modal');
+      if (successModal) {
+        successModal.classList.remove('hidden');
+        successModal.classList.add('flex');
+      }
+    }
+
+    function renderOwnerQueue() {
+      const cont = document.getElementById('owner-booking-queue');
+      if (!cont) return;
+      cont.innerHTML = dbBookings.map(b => `
+        <div class="p-3 border rounded-xl bg-white space-y-1 text-xs">
+          <div class="flex justify-between font-bold">
+            <span>${b.guest_name} (${b.guest_phone})</span>
+            <span class="text-emerald-600 uppercase">${b.status}</span>
+          </div>
+          <p class="text-slate-500">${b.booking_date} @ ${b.booking_time} (${b.guest_count} Guests)</p>
+        </div>
+      `).join('');
+    }
+
+    function openRegisterOwnerModal() {
+      const m = document.getElementById('register-owner-modal');
+      if (m) {
+        m.classList.remove('hidden');
+        m.classList.add('flex');
+      }
+    }
+
+    function handleRestaurantRegistration(event) {
+      event.preventDefault();
+      const name = document.getElementById('reg-rest-name').value;
+      const owner = document.getElementById('reg-owner-name').value;
+      const phone = document.getElementById('reg-mobile').value;
+      const block = document.getElementById('reg-block-select').value;
+      const pin = document.getElementById('reg-pincode').value;
+      const address = document.getElementById('reg-address').value;
+      const cuisine = document.getElementById('reg-cuisine').value.split(',').map(s => s.trim());
+
+      const newId = "rest-" + Date.now();
+      dbRestaurants.push({
+        id: newId,
+        name: name,
+        owner_name: owner,
+        owner_phone: "91" + phone,
+        locality_id: block,
+        pincode: pin,
+        address_line: address,
+        cuisine_tags: cuisine,
+        status: 'pending_approval'
+      });
+
+      dbTables.push({ id: "t-" + Date.now(), restaurant_id: newId, table_number: "Table 1 (Family)", capacity: 4, is_operational: true });
+
+      alert("रेस्टोरेंट रजिस्ट्रेशन सबमिट हुआ! सुपरएडमिन द्वारा अप्रूवल की आवश्यकता है।");
+      closeModal('register-owner-modal');
+      if (authenticatedRoles.admin) renderAdminDashboard();
+    }
+
+    function renderAdminDashboard() {
+      const tbody = document.getElementById('admin-restaurant-tbody');
+      if (!tbody) return;
+      tbody.innerHTML = dbRestaurants.map(r => `
+        <tr class="border-b">
+          <td class="p-2.5 font-bold">${r.name}</td>
+          <td class="p-2.5">${r.locality_id}</td>
+          <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${r.status}</span></td>
+          <td class="p-2.5 text-right">
+            ${r.status === 'pending_approval' ? `<button type="button" onclick="approveRestaurant('${r.id}')" class="px-2 py-1 bg-emerald-600 text-white rounded font-bold text-[10px]">Approve</button>` : '—'}
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function approveRestaurant(id) {
+      const r = dbRestaurants.find(item => item.id === id);
+      if (r) r.status = 'active';
+      renderAdminDashboard();
+      renderRestaurantCards();
+    }
+
+    function navigateCustomer(screen) {
+      ['home', 'details', 'bookings'].forEach(s => {
+        const el = document.getElementById(`cust-screen-${s}`);
+        if (el) el.classList.toggle('hidden', s !== screen);
+      });
+      if (screen === 'bookings') renderCustomerBookings();
+    }
+
+    function renderCustomerBookings() {
+      const cont = document.getElementById('my
