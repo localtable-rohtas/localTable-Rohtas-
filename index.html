@@ -375,8 +375,7 @@
         navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
       });
     }
-
-    // Security PIN Config
+    // 1. PIN CONFIG
     const SECURITY_PINS = {
       admin: "7890",
       owner: "1234"
@@ -388,6 +387,67 @@
     };
 
     let targetRoleToUnlock = null;
+
+    // 2. MODAL OPEN FUNCTION
+    function requestRoleAccess(role) {
+      if (authenticatedRoles[role]) {
+        setRole(role);
+      } else {
+        targetRoleToUnlock = role;
+        document.getElementById('pin-modal-title').innerText = `${role.toUpperCase()} Authentication`;
+        document.getElementById('pin-modal-desc').innerText = `Enter secret PIN to access ${role} portal`;
+        document.getElementById('input-pin-code').value = '';
+        
+        // Modal ko open karna
+        const modal = document.getElementById('pin-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.getElementById('input-pin-code').focus();
+      }
+    }
+
+    // 3. PIN VERIFY FUNCTION
+    function verifyPinSubmission() {
+      const entered = document.getElementById('input-pin-code').value.trim();
+      if (entered === SECURITY_PINS[targetRoleToUnlock]) {
+        authenticatedRoles[targetRoleToUnlock] = true;
+        closeModal('pin-modal');
+        setRole(targetRoleToUnlock);
+      } else {
+        alert("गलत पिन! (Incorrect Security PIN)");
+        document.getElementById('input-pin-code').value = '';
+      }
+    }
+
+    // 4. SCREEN SWITCH FUNCTION
+    function setRole(role) {
+      currentRole = role;
+      document.getElementById('customer-view').classList.toggle('hidden', role !== 'customer');
+      document.getElementById('owner-view').classList.toggle('hidden', role !== 'owner');
+      document.getElementById('admin-view').classList.toggle('hidden', role !== 'admin');
+
+      ['customer', 'owner', 'admin'].forEach(r => {
+        const btn = document.getElementById(`role-btn-${r}`);
+        if (btn) {
+          btn.className = (r === role) 
+            ? "px-2.5 py-1 rounded font-bold text-xs bg-brand-600 text-white transition" 
+            : "px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition";
+        }
+      });
+
+      if (role === 'admin') renderAdminDashboard();
+      if (role === 'owner') renderOwnerQueue();
+    }
+
+    // 5. MODAL CLOSE FUNCTION
+    function closeModal(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.add('hidden');
+        el.classList.remove('flex');
+      }
+    }
+  
 
     // Database Mock
     const ROHTAS_LOCALITIES = [
