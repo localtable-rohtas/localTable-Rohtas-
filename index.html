@@ -1,4 +1,5 @@
 
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -9,11 +10,11 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3170/3170733.png" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js').catch((err) => console.log('SW error:', err));
-      });
+      navigator.serviceWorker.register('/sw.js');
     }
     tailwind.config = {
       theme: {
@@ -29,7 +30,7 @@
           }
         }
       }
-    };
+    }
   </script>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col justify-between select-none">
@@ -45,24 +46,28 @@
     </div>
 
     <div class="flex items-center gap-2">
+      <!-- Role Switcher -->
       <div class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
         <button type="button" onclick="setRole('customer')" id="role-btn-customer" class="px-2.5 py-1 rounded font-bold text-xs bg-brand-600 text-white transition">Customer</button>
         <button type="button" onclick="requestRoleAccess('owner')" id="role-btn-owner" class="px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition">Owner 🔒</button>
         <button type="button" onclick="requestRoleAccess('admin')" id="role-btn-admin" class="px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition">Admin 🔒</button>
       </div>
 
+      <!-- Language Toggle -->
       <button type="button" onclick="toggleLang()" class="flex items-center gap-1 bg-brand-600 px-2.5 py-1 rounded text-white font-semibold text-xs">
         <span id="current-lang-label">हिन्दी</span>
       </button>
     </div>
   </header>
 
-  <!-- MAIN CONTAINER -->
+  <!-- MAIN APP CONTAINER -->
   <main class="w-full max-w-4xl mx-auto bg-white min-h-[calc(100vh-70px)] flex flex-col shadow-xl relative pb-16">
 
-    <!-- CUSTOMER VIEW -->
+    <!-- 1. CUSTOMER PORTAL -->
     <div id="customer-view" class="flex-1 flex flex-col">
       <section id="cust-screen-home" class="p-4 space-y-4 flex-1">
+        
+        <!-- Rohtas Location Selector Box -->
         <div class="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-200 rounded-2xl p-3.5 space-y-2.5">
           <div class="flex items-center justify-between">
             <div class="text-xs font-bold text-orange-900">📍 Select Location (Rohtas, Bihar)</div>
@@ -88,6 +93,7 @@
           </div>
         </div>
 
+        <!-- Search Bar -->
         <input 
           type="text" 
           id="search-input" 
@@ -96,12 +102,14 @@
           class="w-full px-3 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs focus:ring-2 focus:ring-brand-500"
         />
 
+        <!-- Quick Filters -->
         <div class="flex items-center gap-2 overflow-x-auto py-1">
           <button type="button" onclick="filterBy('all')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border bg-slate-900 text-white whitespace-nowrap" data-filter="all">All</button>
           <button type="button" onclick="filterBy('veg')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 bg-white text-slate-700 whitespace-nowrap" data-filter="veg">Pure Veg</button>
           <button type="button" onclick="filterBy('family')" class="filter-chip px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 bg-white text-slate-700 whitespace-nowrap" data-filter="family">Family Dine</button>
         </div>
 
+        <!-- Callout Banner -->
         <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-2xl p-3.5 flex items-center justify-between shadow-md">
           <div class="space-y-0.5">
             <h4 class="text-xs font-bold text-orange-400">Own a Restaurant in Rohtas?</h4>
@@ -112,15 +120,17 @@
           </button>
         </div>
 
+        <!-- Active Filter Indicator -->
         <div class="flex items-center justify-between text-xs text-slate-500 pt-1">
           <span id="current-locality-display" class="font-semibold text-slate-700">Showing verified restaurants</span>
           <span id="restaurant-count-display" class="text-[11px] bg-slate-100 px-2 py-0.5 rounded-full font-bold">2 found</span>
         </div>
 
+        <!-- Restaurant Listing Container -->
         <div class="space-y-4" id="restaurant-cards-container"></div>
       </section>
 
-      <!-- DETAILS SCREEN -->
+      <!-- RESTAURANT DETAILS & TABLE RESERVATION -->
       <section id="cust-screen-details" class="hidden flex-1 flex flex-col p-4 space-y-4">
         <button type="button" onclick="navigateCustomer('home')" class="text-xs font-semibold text-brand-600 flex items-center gap-1">
           ← Back to Outlets
@@ -152,6 +162,7 @@
           </div>
         </div>
 
+        <!-- VISUAL FLOOR PLAN -->
         <div class="space-y-2">
           <span class="text-xs font-bold text-slate-800 uppercase tracking-wider">Select Your Table</span>
           <div class="bg-slate-100 border border-dashed border-slate-300 rounded-2xl p-4 text-center">
@@ -172,19 +183,24 @@
         </button>
       </section>
 
-      <!-- BOOKINGS SCREEN -->
+      <!-- MY BOOKINGS -->
       <section id="cust-screen-bookings" class="hidden flex-1 p-4 space-y-4">
         <h2 class="text-base font-bold text-slate-900">My Reservations</h2>
         <div id="my-bookings-list" class="space-y-3"></div>
       </section>
 
+      <!-- BOTTOM NAV -->
       <nav class="fixed bottom-0 left-0 right-0 max-w-4xl mx-auto bg-white border-t border-slate-200 px-6 py-2.5 flex items-center justify-around z-40">
-        <button type="button" onclick="navigateCustomer('home')" id="cust-nav-home" class="font-bold text-xs text-brand-600">Explore</button>
-        <button type="button" onclick="navigateCustomer('bookings')" id="cust-nav-bookings" class="font-bold text-xs text-slate-400 hover:text-slate-700">Bookings</button>
+        <button type="button" onclick="navigateCustomer('home')" id="cust-nav-home" class="font-bold text-xs text-brand-600">
+          Explore
+        </button>
+        <button type="button" onclick="navigateCustomer('bookings')" id="cust-nav-bookings" class="font-bold text-xs text-slate-400 hover:text-slate-700">
+          Bookings
+        </button>
       </nav>
     </div>
 
-    <!-- OWNER VIEW -->
+    <!-- 2. OWNER DASHBOARD (LOCKED) -->
     <div id="owner-view" class="hidden flex-1 flex flex-col p-4 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
         <div>
@@ -200,7 +216,7 @@
       </div>
     </div>
 
-    <!-- ADMIN VIEW -->
+    <!-- 3. ADMIN PANEL (LOCKED) -->
     <div id="admin-view" class="hidden flex-1 flex flex-col p-4 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
         <div>
@@ -226,7 +242,7 @@
     </div>
   </main>
 
-  <!-- PIN MODAL -->
+  <!-- MODAL: PIN AUTHENTICATION -->
   <div id="pin-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl text-center">
       <div class="w-12 h-12 bg-orange-100 text-brand-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">🔒</div>
@@ -242,26 +258,7 @@
     </div>
   </div>
 
-  <!-- SUCCESS MODAL -->
-  <div id="success-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
-    <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl text-center">
-      <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">✅</div>
-      <div>
-        <h3 class="font-bold text-slate-900 text-sm">बुकिंग सफल हुई!</h3>
-        <p id="success-booking-summary" class="text-xs text-slate-600 mt-1"></p>
-      </div>
-      <div class="space-y-2 pt-2">
-        <a id="whatsapp-notify-btn" href="#" target="_blank" class="w-full flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md transition">
-          <span>📲 Send to Owner via WhatsApp</span>
-        </a>
-        <button type="button" onclick="closeModal('success-modal'); navigateCustomer('bookings');" class="w-full bg-slate-100 text-slate-700 font-semibold py-2 rounded-xl text-xs">
-          View My Bookings
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- REGISTER OWNER MODAL -->
+  <!-- MODAL: REGISTER OWNER -->
   <div id="register-owner-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between border-b pb-2">
@@ -279,7 +276,7 @@
             <input type="text" id="reg-owner-name" required class="w-full p-2 border rounded-lg" />
           </div>
           <div>
-            <label class="block font-semibold text-slate-700">Owner WhatsApp No. (10 digits) *</label>
+            <label class="block font-semibold text-slate-700">Mobile Number (10 digits) *</label>
             <input type="tel" id="reg-mobile" pattern="[6-9][0-9]{9}" maxlength="10" required class="w-full p-2 border rounded-lg" placeholder="94310XXXXX" />
           </div>
         </div>
@@ -306,7 +303,7 @@
     </div>
   </div>
 
-  <!-- BOOKING MODAL -->
+  <!-- MODAL: CONFIRM BOOKING -->
   <div id="booking-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
     <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
       <div class="flex items-center justify-between border-b pb-2">
@@ -334,11 +331,11 @@
     </div>
   </div>
 
-  <!-- SCRIPT -->
   <script>
+    // SECURITY CONFIG
     const SECURITY_PINS = {
-      admin: "7890",
-      owner: "1234"
+      admin: "7890", // आपका एडमिन पिन
+      owner: "1234"  // रेस्टोरेंट ओनर पिन
     };
 
     let authenticatedRoles = {
@@ -348,6 +345,7 @@
 
     let targetRoleToUnlock = null;
 
+    // DATA STATE
     const ROHTAS_LOCALITIES = [
       { id: "sasaram", name_en: "Sasaram", name_hi: "सासाराम", pincode: "821115" },
       { id: "dehri", name_en: "Dehri-on-Sone", name_hi: "डेहरी-ऑन-सोन", pincode: "821307" },
@@ -362,27 +360,27 @@
         id: "rohtas-1",
         name: "Grand Sasaram Family Restaurant",
         owner_name: "Ramesh Singh",
-        owner_phone: "919431011223",
         locality_id: "sasaram",
         pincode: "821115",
-       <!-- PWA Install Popup Banner -->
-<div id="pwa-install-banner" class="hidden bg-brand-500 text-white p-3 flex items-center justify-between shadow-md sticky top-10 z-40">
-  <div class="flex items-center gap-2 text-xs font-semibold">
-    <span>📲</span>
-    <span>LocalTable Rohtas ऐप इंस्टॉल करें</span>
-  </div>
-  <button type="button" onclick="triggerPwaInstall()" class="bg-white text-brand-600 font-bold px-3 py-1.5 rounded-lg text-xs shadow hover:bg-slate-50">
-    Install
-  </button>
-</div>
-    <!-- DIRECT INSTALL BANNER -->
-<div id="pwa-install-banner" class="hidden bg-orange-600 text-white p-3 flex items-center justify-between shadow-lg sticky top-12 z-40">
-  <div class="flex items-center gap-2 text-xs font-semibold">
-    <span>📲</span>
-    <span>LocalTable Rohtas Phone Mein Install Karein</span>
-  </div>
-  <button type="button" onclick="triggerPwaInstall()" class="bg-white text-orange-600 font-bold px-3 py-1.5 rounded-lg text-xs shadow hover:bg-slate-100">
-    Install Now
-  </button>
-</div>
-    
+        address_line: "Near Sher Shah Suri Tomb, Sasaram",
+        cuisine_tags: ["Bhojpuri Thali", "North Indian"],
+        is_pure_veg: false,
+        is_family_friendly: true,
+        status: "active"
+      },
+      {
+        id: "rohtas-2",
+        name: "Sone View Bhojanalaya",
+        owner_name: "Vikash Gupta",
+        locality_id: "dehri",
+        pincode: "821307",
+        address_line: "Station Road, Dehri-on-Sone",
+        cuisine_tags: ["Pure Veg Thali", "Litti Chokha"],
+        is_pure_veg: true,
+        is_family_friendly: true,
+        status: "active"
+      }
+    ];
+
+    let dbTables = [
+      { id: 
