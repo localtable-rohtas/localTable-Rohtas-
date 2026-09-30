@@ -1,22 +1,21 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>LocalTable Rohtas | लोकल टेबल रोहतास</title>
-    <link rel="manifest" href="/manifest.json" />
+  <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#ea580c" />
   <meta name="mobile-web-app-capable" content="yes" />
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3170/3170733.png" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js');
-    }
-  </script>
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3170/3170733.png" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js');
+    }
     tailwind.config = {
       theme: {
         extend: {
@@ -50,8 +49,8 @@
       <!-- Role Switcher -->
       <div class="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
         <button type="button" onclick="setRole('customer')" id="role-btn-customer" class="px-2.5 py-1 rounded font-bold text-xs bg-brand-600 text-white transition">Customer</button>
-        <button type="button" onclick="setRole('owner')" id="role-btn-owner" class="px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition">Owner</button>
-        <button type="button" onclick="setRole('admin')" id="role-btn-admin" class="px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition">Admin</button>
+        <button type="button" onclick="requestRoleAccess('owner')" id="role-btn-owner" class="px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition">Owner 🔒</button>
+        <button type="button" onclick="requestRoleAccess('admin')" id="role-btn-admin" class="px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition">Admin 🔒</button>
       </div>
 
       <!-- Language Toggle -->
@@ -201,14 +200,14 @@
       </nav>
     </div>
 
-    <!-- 2. OWNER DASHBOARD -->
+    <!-- 2. OWNER DASHBOARD (LOCKED) -->
     <div id="owner-view" class="hidden flex-1 flex flex-col p-4 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
         <div>
-          <span class="text-xs font-semibold text-brand-600 uppercase tracking-wider">Owner Portal</span>
+          <span class="text-xs font-semibold text-brand-600 uppercase tracking-wider">Owner Portal (Verified)</span>
           <h2 class="text-base font-bold text-slate-900">Grand Sasaram Family Restaurant</h2>
         </div>
-        <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-1 rounded">Open Now</span>
+        <button type="button" onclick="logoutRole()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded">Lock / Logout</button>
       </div>
 
       <div class="space-y-3">
@@ -217,13 +216,14 @@
       </div>
     </div>
 
-    <!-- 3. ADMIN PANEL -->
+    <!-- 3. ADMIN PANEL (LOCKED) -->
     <div id="admin-view" class="hidden flex-1 flex flex-col p-4 space-y-4">
       <div class="flex items-center justify-between border-b pb-3">
         <div>
-          <span class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Superadmin Panel</span>
+          <span class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Superadmin Panel (Secure)</span>
           <h2 class="text-base font-bold text-slate-900">Rohtas District Outlets</h2>
         </div>
+        <button type="button" onclick="logoutRole()" class="text-xs bg-rose-50 hover:bg-rose-100 text-rose-700 font-bold px-2.5 py-1 rounded">Lock / Logout</button>
       </div>
 
       <div class="border rounded-xl overflow-hidden bg-white shadow-sm">
@@ -241,6 +241,22 @@
       </div>
     </div>
   </main>
+
+  <!-- MODAL: PIN AUTHENTICATION -->
+  <div id="pin-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-2xl max-w-xs w-full p-5 space-y-4 shadow-2xl text-center">
+      <div class="w-12 h-12 bg-orange-100 text-brand-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">🔒</div>
+      <div>
+        <h3 id="pin-modal-title" class="font-bold text-slate-900 text-sm">Security PIN Required</h3>
+        <p id="pin-modal-desc" class="text-xs text-slate-500 mt-1">Enter PIN to access restricted area</p>
+      </div>
+      <input type="password" id="input-pin-code" maxlength="6" placeholder="Enter PIN" class="w-full p-2.5 text-center text-lg tracking-widest border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 font-bold" />
+      <div class="flex gap-2">
+        <button type="button" onclick="closeModal('pin-modal')" class="w-1/2 bg-slate-100 font-semibold py-2 rounded-xl text-xs text-slate-700">Cancel</button>
+        <button type="button" onclick="verifyPinSubmission()" class="w-1/2 bg-brand-600 hover:bg-brand-700 font-bold py-2 rounded-xl text-xs text-white">Unlock</button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL: REGISTER OWNER -->
   <div id="register-owner-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
@@ -260,8 +276,8 @@
             <input type="text" id="reg-owner-name" required class="w-full p-2 border rounded-lg" />
           </div>
           <div>
-            <label class="block font-semibold text-slate-700">Mobile Number *</label>
-            <input type="tel" id="reg-mobile" required class="w-full p-2 border rounded-lg" placeholder="+91 94310 XXXXX" />
+            <label class="block font-semibold text-slate-700">Mobile Number (10 digits) *</label>
+            <input type="tel" id="reg-mobile" pattern="[6-9][0-9]{9}" maxlength="10" required class="w-full p-2 border rounded-lg" placeholder="94310XXXXX" />
           </div>
         </div>
         <div class="grid grid-cols-2 gap-2">
@@ -301,17 +317,35 @@
         <div class="flex justify-between"><span>Allocated Table:</span> <strong id="modal-table" class="text-brand-600">-</strong></div>
       </div>
       <div class="space-y-2 text-xs">
-        <label class="block font-semibold text-slate-700">Your Full Name</label>
-        <input type="text" id="cust-input-name" value="Amit Kumar" class="w-full p-2 border rounded-lg" />
-        <label class="block font-semibold text-slate-700">Mobile Number</label>
-        <input type="tel" id="cust-input-phone" value="+91 94310 12345" class="w-full p-2 border rounded-lg" />
+        <div>
+          <label class="block font-semibold text-slate-700">Your Full Name *</label>
+          <input type="text" id="cust-input-name" required placeholder="अपना नाम दर्ज करें" class="w-full p-2 border rounded-lg" />
+        </div>
+        <div>
+          <label class="block font-semibold text-slate-700">Mobile Number (10 digits) *</label>
+          <input type="tel" id="cust-input-phone" maxlength="10" placeholder="10 अंकों का मोबाइल नंबर" class="w-full p-2 border rounded-lg font-mono" />
+          <span class="text-[10px] text-slate-400">फर्जी बुकिंग रोकने के लिए सही नंबर आवश्यक है</span>
+        </div>
       </div>
       <button type="button" onclick="executeBooking()" class="w-full bg-brand-600 text-white font-bold py-2.5 rounded-xl text-xs uppercase tracking-wider">Confirm Reservation</button>
     </div>
   </div>
 
   <script>
-    // 1. STATE & DATA
+    // SECURITY CONFIG
+    const SECURITY_PINS = {
+      admin: "7890", // आपका एडमिन पिन
+      owner: "1234"  // रेस्टोरेंट ओनर पिन
+    };
+
+    let authenticatedRoles = {
+      admin: false,
+      owner: false
+    };
+
+    let targetRoleToUnlock = null;
+
+    // DATA STATE
     const ROHTAS_LOCALITIES = [
       { id: "sasaram", name_en: "Sasaram", name_hi: "सासाराम", pincode: "821115" },
       { id: "dehri", name_en: "Dehri-on-Sone", name_hi: "डेहरी-ऑन-सोन", pincode: "821307" },
@@ -321,7 +355,6 @@
     ];
 
     let dbLocalities = [...ROHTAS_LOCALITIES];
-
     let dbRestaurants = [
       {
         id: "rohtas-1",
@@ -361,7 +394,7 @@
         restaurant_id: "rohtas-1",
         table_id: "t1",
         guest_name: "Rahul Verma",
-        guest_phone: "+91 94310 11223",
+        guest_phone: "9431011223",
         booking_date: new Date().toISOString().split('T')[0],
         booking_time: "07:30 PM",
         guest_count: 4,
@@ -380,7 +413,6 @@
     const DEFAULT_SLOTS = ["12:00 PM", "01:00 PM", "07:30 PM", "08:30 PM"];
     const todayStr = new Date().toISOString().split('T')[0];
 
-    // 2. INITIALIZATION
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('booking-date-picker').value = todayStr;
       document.getElementById('booking-date-picker').min = todayStr;
@@ -389,10 +421,43 @@
       renderOwnerQueue();
     });
 
-    // 3. ROLE SWITCHING (Customer, Owner, Admin)
+    // SECURITY PIN HANDLING
+    function requestRoleAccess(role) {
+      if (authenticatedRoles[role]) {
+        setRole(role);
+      } else {
+        targetRoleToUnlock = role;
+        document.getElementById('pin-modal-title').innerText = `${role.toUpperCase()} Authentication`;
+        document.getElementById('pin-modal-desc').innerText = `Enter secret PIN to access ${role} portal`;
+        document.getElementById('input-pin-code').value = '';
+        const modal = document.getElementById('pin-modal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        document.getElementById('input-pin-code').focus();
+      }
+    }
+
+    function verifyPinSubmission() {
+      const entered = document.getElementById('input-pin-code').value.trim();
+      if (entered === SECURITY_PINS[targetRoleToUnlock]) {
+        authenticatedRoles[targetRoleToUnlock] = true;
+        closeModal('pin-modal');
+        setRole(targetRoleToUnlock);
+      } else {
+        alert("गलत पिन! (Incorrect Security PIN)");
+        document.getElementById('input-pin-code').value = '';
+      }
+    }
+
+    function logoutRole() {
+      authenticatedRoles.admin = false;
+      authenticatedRoles.owner = false;
+      setRole('customer');
+      alert("Portal Locked Successfully.");
+    }
+
     function setRole(role) {
       currentRole = role;
-      
       document.getElementById('customer-view').classList.toggle('hidden', role !== 'customer');
       document.getElementById('owner-view').classList.toggle('hidden', role !== 'owner');
       document.getElementById('admin-view').classList.toggle('hidden', role !== 'admin');
@@ -410,7 +475,6 @@
       if (role === 'owner') renderOwnerQueue();
     }
 
-    // 4. DROPDOWNS & CARDS
     function renderLocalityDropdowns() {
       const filterSelect = document.getElementById('locality-filter-select');
       const regSelect = document.getElementById('reg-block-select');
@@ -481,7 +545,6 @@
       `).join('');
     }
 
-    // 5. BOOKING LOGIC
     function startBookingFlow(restaurantId) {
       selectedRestaurant = dbRestaurants.find(r => r.id === restaurantId);
       selectedTable = null;
@@ -583,11 +646,24 @@
       m.classList.add('flex');
     }
 
+    // STRICT VALIDATION ON BOOKING
     function executeBooking() {
       const date = document.getElementById('booking-date-picker').value;
       const guests = parseInt(document.getElementById('booking-guests-picker').value, 10);
-      const name = document.getElementById('cust-input-name').value.trim() || 'Guest';
-      const phone = document.getElementById('cust-input-phone').value.trim() || '9431000000';
+      const name = document.getElementById('cust-input-name').value.trim();
+      const rawPhone = document.getElementById('cust-input-phone').value.trim();
+
+      // Mobile number security validation (10 digits starting with 6,7,8,9)
+      const phoneRegex = /^[6-9]\d{9}$/;
+      if (!name || name.length < 2) {
+        alert("कृपया अपना सही नाम दर्ज करें।");
+        return;
+      }
+      if (!phoneRegex.test(rawPhone)) {
+        alert("अमान्य मोबाइल नंबर! कृपया 10 अंकों का सही भारतीय मोबाइल नंबर दर्ज करें।");
+        return;
+      }
+
       const bookingId = "LT-ROH-" + Math.floor(100 + Math.random() * 900);
 
       dbBookings.push({
@@ -595,19 +671,18 @@
         restaurant_id: selectedRestaurant.id,
         table_id: selectedTable.id,
         guest_name: name,
-        guest_phone: phone,
+        guest_phone: rawPhone,
         booking_date: date,
         booking_time: selectedSlot,
         guest_count: guests,
         status: 'confirmed'
       });
 
-      alert("Table Reserved Successfully! Booking ID: " + bookingId);
+      alert(`✅ टेबल सफलतापूर्वक बुक हो गई!\nबुकिंग ID: ${bookingId}`);
       closeModal('booking-modal');
       navigateCustomer('bookings');
     }
 
-    // 6. OWNER & ADMIN QUEUES
     function renderOwnerQueue() {
       const cont = document.getElementById('owner-booking-queue');
       cont.innerHTML = dbBookings.map(b => `
@@ -652,9 +727,9 @@
 
       dbTables.push({ id: "t-" + Date.now(), restaurant_id: newId, table_number: "Table 1 (Family)", capacity: 4, is_operational: true });
 
-      alert("Restaurant submitted! Switch to 'Admin' tab to approve it.");
+      alert("रेस्टोरेंट रजिस्ट्रेशन सबमिट हुआ! सुपरएडमिन द्वारा अप्रूवल की आवश्यकता है।");
       closeModal('register-owner-modal');
-      renderAdminDashboard();
+      if (authenticatedRoles.admin) renderAdminDashboard();
     }
 
     function renderAdminDashboard() {
@@ -678,7 +753,6 @@
       renderRestaurantCards();
     }
 
-    // 7. NAVIGATION
     function navigateCustomer(screen) {
       ['home', 'details', 'bookings'].forEach(s => {
         document.getElementById(`cust-screen-${s}`).classList.toggle('hidden', s !== screen);
