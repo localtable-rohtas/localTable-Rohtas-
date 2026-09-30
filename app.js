@@ -1,0 +1,565 @@
+// ==========================================
+// 1. PWA CHROME DIRECT DOWNLOAD / INSTALL
+// ==========================================
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.classList.remove('hidden');
+});
+
+function triggerPwaInstall() {
+  if (deferredPrompt) {
+    deferredPrompt.prompt();
+    deferredPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        const banner = document.getElementById('pwa-install-banner');
+        if (banner) banner.classList.add('hidden');
+      }
+      deferredPrompt = null;
+    });
+  } else {
+    alert("ऐप डाउनलोड करने के लिए ऊपर दाईं ओर 3 डॉट्स (⋮) दबाएँ और 'Install app' या 'Add to Home screen' चुनें।");
+  }
+}
+
+window.addEventListener('appinstalled', () => {
+  deferredPrompt = null;
+  const banner = document.getElementById('pwa-install-banner');
+  if (banner) banner.classList.add('hidden');
+});
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
+  });
+}
+
+// ==========================================
+// 2. SECURITY CONFIG & ROLES (ADMIN / OWNER)
+// ==========================================
+const SECURITY_PINS = {
+  admin: "7890",
+  owner: "1234"
+};
+
+let authenticatedRoles = {
+  admin: false,
+  owner: false
+};
+
+let targetRoleToUnlock = null;
+
+// ==========================================
+// 3. DATABASE STATE
+// ==========================================
+const ROHTAS_LOCALITIES = [
+  { id: "sasaram", name_en: "Sasaram", name_hi: "सासाराम", pincode: "821115" },
+  { id: "dehri", name_en: "Dehri-on-Sone", name_hi: "डेहरी-ऑन-सोन", pincode: "821307" },
+  { id: "bikramganj", name_en: "Bikramganj", name_hi: "बिक्रमगंज", pincode: "802212" },
+  { id: "nokha", name_en: "Nokha", name_hi: "नोखा", pincode: "802215" },
+  { id: "chenari", name_en: "Chenari", name_hi: "चेनारी", pincode: "821104" }
+];
+
+let dbLocalities = [...ROHTAS_LOCALITIES];
+let dbRestaurants = [
+  {
+    id: "rohtas-1",
+    name: "Grand Sasaram Family Restaurant",
+    owner_name: "Ramesh Singh",
+    owner_phone: "919431011223",
+    locality_id: "sasaram",
+    pincode: "821115",
+    address_line: "Near Sher Shah Suri Tomb, Sasaram",
+    cuisine_tags: ["Bhojpuri Thali", "North Indian"],
+    is_pure_veg: false,
+    is_family_friendly: true,
+    status: "active"
+  },
+  {
+    id: "rohtas-2",
+    name: "Sone View Bhojanalaya",
+    owner_name: "Vikash Gupta",
+    owner_phone: "919431099887",
+    locality_id: "dehri",
+    pincode: "821307",
+    address_line: "Station Road, Dehri-on-Sone",
+    cuisine_tags: ["Pure Veg Thali", "Litti Chokha"],
+    is_pure_veg: true,
+    is_family_friendly: true,
+    status: "active"
+  }
+];
+
+let dbTables = [
+  { id: "t1", restaurant_id: "rohtas-1", table_number: "Table 1 (Family)", capacity: 4, is_operational: true },
+  { id: "t2", restaurant_id: "rohtas-1", table_number: "Table 2 (Window)", capacity: 2, is_operational: true },
+  { id: "t3", restaurant_id: "rohtas-2", table_number: "Table 1", capacity: 4, is_operational: true }
+];
+
+let dbBookings = [
+  {
+    id: "LT-ROH-101",
+    restaurant_id: "rohtas-1",
+    table_id: "t1",
+    guest_name: "Rahul Verma",
+    guest_phone: "9431011223",
+    booking_date: new Date().toISOString().split('T')[0],
+    booking_time: "07:30 PM",
+    guest_count: 4,
+    status: "confirmed"
+  }
+];
+
+let currentRole = 'customer';
+let currentLang = 'en';
+let selectedLocality = 'all';
+let activeFilter = 'all';
+let selectedRestaurant = null;
+let selectedSlot = "07:30 PM";
+let selectedTable = null;
+
+const DEFAULT_SLOTS = ["12:00 PM", "01:00 PM", "07:30 PM", "08:30 PM"];
+const todayStr = new Date().toISOString().split('T')[0];
+
+window.addEventListener('DOMContentLoaded', () => {
+  const dp = document.getElementById('booking-date-picker');
+  if (dp) {
+    dp.value = todayStr;
+    dp.min = todayStr;
+  }
+  renderLocalityDropdowns();
+  renderRestaurantCards();
+  renderOwnerQueue();
+});
+
+// ==========================================
+// 4. PIN SECURITY
+// ==========================================
+function requestRoleAccess(role) {
+  if (authenticatedRoles[role]) {
+    setRole(role);
+  } else {
+    targetRoleToUnlock = role;
+    const titleEl = document.getElementById('pin-modal-title');
+    const descEl = document.getElementById('pin-modal-desc');
+    const inputEl = document.getElementById('input-pin-code');
+    if (titleEl) titleEl.innerText = `${role.toUpperCase()} Authentication`;
+    if (descEl) descEl.innerText = `Enter secret PIN to access ${role} portal`;
+    if (inputEl) inputEl.value = '';
+    const modal = document.getElementById('pin-modal');
+    if (modal) {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+    if (inputEl) inputEl.focus();
+  }
+}
+
+function verifyPinSubmission() {
+  const inputEl = document.getElementById('input-pin-code');
+  const entered = inputEl ? inputEl.value.trim() : '';
+  if (entered === SECURITY_PINS[targetRoleToUnlock]) {
+    authenticatedRoles[targetRoleToUnlock] = true;
+    closeModal('pin-modal');
+    setRole(targetRoleToUnlock);
+  } else {
+    alert("गलत पिन! (Incorrect PIN)");
+    if (inputEl) inputEl.value = '';
+  }
+}
+
+function logoutRole() {
+  authenticatedRoles.admin = false;
+  authenticatedRoles.owner = false;
+  setRole('customer');
+  alert("Portal Locked Successfully.");
+}
+
+function setRole(role) {
+  currentRole = role;
+  const cv = document.getElementById('customer-view');
+  const ov = document.getElementById('owner-view');
+  const av = document.getElementById('admin-view');
+  if (cv) cv.classList.toggle('hidden', role !== 'customer');
+  if (ov) ov.classList.toggle('hidden', role !== 'owner');
+  if (av) av.classList.toggle('hidden', role !== 'admin');
+
+  ['customer', 'owner', 'admin'].forEach(r => {
+    const btn = document.getElementById(`role-btn-${r}`);
+    if (btn) {
+      btn.className = (r === role) 
+        ? "px-2.5 py-1 rounded font-bold text-xs bg-brand-600 text-white transition" 
+        : "px-2.5 py-1 rounded font-medium text-xs text-slate-300 hover:text-white transition";
+    }
+  });
+
+  if (role === 'admin') renderAdminDashboard();
+  if (role === 'owner') renderOwnerQueue();
+}
+
+// ==========================================
+// 5. RESTAURANTS & FILTERS
+// ==========================================
+function renderLocalityDropdowns() {
+  const filterSelect = document.getElementById('locality-filter-select');
+  const regSelect = document.getElementById('reg-block-select');
+
+  if (filterSelect) {
+    filterSelect.innerHTML = `<option value="all">All Rohtas (सभी क्षेत्र)</option>` + 
+      dbLocalities.map(loc => `<option value="${loc.id}">${loc.name_en} (${loc.name_hi})</option>`).join('');
+  }
+
+  if (regSelect) {
+    regSelect.innerHTML = `<option value="">-- Choose Block --</option>` +
+      dbLocalities.map(loc => `<option value="${loc.id}">${loc.name_en} (${loc.pincode})</option>`).join('');
+
+    regSelect.onchange = function() {
+      const item = dbLocalities.find(l => l.id === this.value);
+      const pinField = document.getElementById('reg-pincode');
+      if (item && pinField) pinField.value = item.pincode;
+    };
+  }
+}
+
+function onLocalityChange(val) {
+  selectedLocality = val;
+  renderRestaurantCards();
+}
+
+function filterBy(filter) {
+  activeFilter = filter;
+  renderRestaurantCards();
+}
+
+function handleSearch(term) {
+  renderRestaurantCards(term.toLowerCase().trim());
+}
+
+function renderRestaurantCards(searchQuery = "") {
+  const target = document.getElementById('restaurant-cards-container');
+  const countEl = document.getElementById('restaurant-count-display');
+  if (!target) return;
+
+  let list = dbRestaurants.filter(r => r.status === 'active');
+  if (selectedLocality !== 'all') list = list.filter(r => r.locality_id === selectedLocality);
+  if (activeFilter === 'veg') list = list.filter(r => r.is_pure_veg);
+  if (activeFilter === 'family') list = list.filter(r => r.is_family_friendly);
+  if (searchQuery) {
+    list = list.filter(r => r.name.toLowerCase().includes(searchQuery) || (r.address_line || '').toLowerCase().includes(searchQuery));
+  }
+
+  if (countEl) countEl.innerText = `${list.length} outlets`;
+
+  if (list.length === 0) {
+    target.innerHTML = `<div class="p-8 text-center text-xs text-slate-400 bg-slate-50 border rounded-2xl">No restaurants found in this locality. Register one now!</div>`;
+    return;
+  }
+
+  target.innerHTML = list.map(r => `
+    <div class="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-sm p-4 space-y-2">
+      <div class="flex justify-between items-start">
+        <div>
+          <h3 class="font-bold text-slate-900 text-sm">${r.name}</h3>
+          <p class="text-xs text-slate-500">${(r.cuisine_tags || []).join(', ')}</p>
+          <p class="text-[11px] text-slate-400 mt-0.5">${r.address_line} (${r.pincode})</p>
+        </div>
+        ${r.is_pure_veg ? '<span class="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded">PURE VEG</span>' : ''}
+      </div>
+      <button type="button" onclick="startBookingFlow('${r.id}')" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-bold py-2.5 px-4 rounded-xl text-xs uppercase transition">
+        Reserve Table
+      </button>
+    </div>
+  `).join('');
+}
+
+// ==========================================
+// 6. BOOKING & FLOOR PLAN
+// ==========================================
+function startBookingFlow(restaurantId) {
+  selectedRestaurant = dbRestaurants.find(r => r.id === restaurantId);
+  selectedTable = null;
+  selectedSlot = DEFAULT_SLOTS[0];
+
+  const detView = document.getElementById('restaurant-details-view');
+  if (detView && selectedRestaurant) {
+    detView.innerHTML = `
+      <div class="p-4 bg-slate-900 text-white rounded-2xl">
+        <h2 class="text-sm font-bold">${selectedRestaurant.name}</h2>
+        <p class="text-xs text-slate-300">${selectedRestaurant.address_line}</p>
+      </div>
+    `;
+  }
+
+  const slotCont = document.getElementById('time-slot-container');
+  if (slotCont) {
+    slotCont.innerHTML = DEFAULT_SLOTS.map(s => `
+      <button type="button" onclick="selectSlot('${s}')" class="slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold ${s === selectedSlot ? 'bg-brand-600 text-white' : 'bg-white text-slate-700'}" data-slot="${s}">
+        ${s}
+      </button>
+    `).join('');
+  }
+
+  navigateCustomer('details');
+  updateVisualFloorLayout();
+}
+
+function selectSlot(slot) {
+  selectedSlot = slot;
+  document.querySelectorAll('.slot-btn').forEach(b => {
+    b.className = b.getAttribute('data-slot') === slot 
+      ? "slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold bg-brand-600 text-white" 
+      : "slot-btn px-3 py-1.5 rounded-lg border text-xs font-semibold bg-white text-slate-700";
+  });
+  selectedTable = null;
+  updateVisualFloorLayout();
+}
+
+function onBookingParamChange() {
+  selectedTable = null;
+  updateVisualFloorLayout();
+}
+
+function updateVisualFloorLayout() {
+  if (!selectedRestaurant) return;
+  const dp = document.getElementById('booking-date-picker');
+  const date = dp ? dp.value : todayStr;
+  const restTables = dbTables.filter(t => t.restaurant_id === selectedRestaurant.id && t.is_operational);
+  const grid = document.getElementById('floor-layout-grid');
+  const bookBtn = document.getElementById('proceed-booking-btn');
+  if (!grid) return;
+
+  grid.innerHTML = restTables.map(tbl => {
+    const isBooked = dbBookings.some(b => 
+      b.table_id === tbl.id && 
+      b.booking_date === date && 
+      b.booking_time === selectedSlot && 
+      b.status !== 'cancelled'
+    );
+
+    const isSelected = selectedTable && selectedTable.id === tbl.id;
+
+    if (isBooked) {
+      return `
+        <div class="p-3 rounded-xl border bg-slate-200 text-slate-400 cursor-not-allowed text-center">
+          <span class="font-bold text-xs block">${tbl.table_number}</span>
+          <span class="text-[9px] text-rose-500 font-bold">Booked</span>
+        </div>
+      `;
+    }
+
+    return `
+      <div onclick="selectTable('${tbl.id}')" class="p-3 rounded-xl border cursor-pointer text-center transition ${isSelected ? 'bg-brand-500 text-white ring-2 ring-brand-300' : 'bg-white hover:border-brand-500'}">
+        <span class="font-bold text-xs block">${tbl.table_number}</span>
+        <span class="text-[9px] opacity-80">${tbl.capacity} Seats</span>
+      </div>
+    `;
+  }).join('');
+
+  if (bookBtn) {
+    if (selectedTable) {
+      bookBtn.disabled = false;
+      bookBtn.className = "w-full bg-brand-600 hover:bg-brand-700 text-white font-bold py-3 px-4 rounded-xl text-xs uppercase cursor-pointer transition";
+      bookBtn.innerText = `Continue with ${selectedTable.table_number}`;
+    } else {
+      bookBtn.disabled = true;
+      bookBtn.className = "w-full bg-slate-300 text-slate-500 font-bold py-3 px-4 rounded-xl text-xs uppercase cursor-not-allowed";
+      bookBtn.innerText = "Select an Available Table";
+    }
+  }
+}
+
+function selectTable(id) {
+  selectedTable = dbTables.find(t => t.id === id);
+  updateVisualFloorLayout();
+}
+
+function confirmBookingModal() {
+  const restNameEl = document.getElementById('modal-rest-name');
+  const dtEl = document.getElementById('modal-datetime');
+  const guestsEl = document.getElementById('modal-guests');
+  const tblEl = document.getElementById('modal-table');
+  const dp = document.getElementById('booking-date-picker');
+  const gp = document.getElementById('booking-guests-picker');
+
+  if (restNameEl && selectedRestaurant) restNameEl.innerText = selectedRestaurant.name;
+  if (dtEl && dp) dtEl.innerText = `${dp.value} @ ${selectedSlot}`;
+  if (guestsEl && gp) guestsEl.innerText = `${gp.value} Guests`;
+  if (tblEl && selectedTable) tblEl.innerText = selectedTable.table_number;
+
+  const m = document.getElementById('booking-modal');
+  if (m) {
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+  }
+}
+
+function executeBooking() {
+  const dp = document.getElementById('booking-date-picker');
+  const gp = document.getElementById('booking-guests-picker');
+  const nameInput = document.getElementById('cust-input-name');
+  const phoneInput = document.getElementById('cust-input-phone');
+
+  const date = dp ? dp.value : todayStr;
+  const guests = gp ? parseInt(gp.value, 10) : 2;
+  const name = nameInput ? nameInput.value.trim() : '';
+  const rawPhone = phoneInput ? phoneInput.value.trim() : '';
+
+  const phoneRegex = /^[6-9]\d{9}$/;
+  if (!name || name.length < 2) {
+    alert("कृपया अपना सही नाम दर्ज करें।");
+    return;
+  }
+  if (!phoneRegex.test(rawPhone)) {
+    alert("अमान्य मोबाइल नंबर! 10 अंकों का सही भारतीय मोबाइल नंबर दर्ज करें।");
+    return;
+  }
+
+  const bookingId = "LT-ROH-" + Math.floor(100 + Math.random() * 900);
+  const bookingObj = {
+    id: bookingId,
+    restaurant_id: selectedRestaurant ? selectedRestaurant.id : '',
+    table_id: selectedTable ? selectedTable.id : '',
+    guest_name: name,
+    guest_phone: rawPhone,
+    booking_date: date,
+    booking_time: selectedSlot,
+    guest_count: guests,
+    status: 'confirmed'
+  };
+
+  dbBookings.push(bookingObj);
+  closeModal('booking-modal');
+  alert(`✅ टेबल सफलतापूर्वक बुक हो गई!\nबुकिंग ID: ${bookingId}`);
+  navigateCustomer('bookings');
+}
+
+// ==========================================
+// 7. OWNER & ADMIN CONTROLS
+// ==========================================
+function renderOwnerQueue() {
+  const cont = document.getElementById('owner-booking-queue');
+  if (!cont) return;
+  cont.innerHTML = dbBookings.map(b => `
+    <div class="p-3 border rounded-xl bg-white space-y-1 text-xs">
+      <div class="flex justify-between font-bold">
+        <span>${b.guest_name} (${b.guest_phone})</span>
+        <span class="text-emerald-600 uppercase">${b.status}</span>
+      </div>
+      <p class="text-slate-500">${b.booking_date} @ ${b.booking_time} (${b.guest_count} Guests)</p>
+    </div>
+  `).join('');
+}
+
+function openRegisterOwnerModal() {
+  const m = document.getElementById('register-owner-modal');
+  if (m) {
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+  }
+}
+
+function handleRestaurantRegistration(event) {
+  event.preventDefault();
+  const name = document.getElementById('reg-rest-name').value;
+  const owner = document.getElementById('reg-owner-name').value;
+  const phone = document.getElementById('reg-mobile').value;
+  const block = document.getElementById('reg-block-select').value;
+  const pin = document.getElementById('reg-pincode').value;
+  const address = document.getElementById('reg-address').value;
+  const cuisine = document.getElementById('reg-cuisine').value.split(',').map(s => s.trim());
+
+  const newId = "rest-" + Date.now();
+  dbRestaurants.push({
+    id: newId,
+    name: name,
+    owner_name: owner,
+    owner_phone: phone,
+    locality_id: block,
+    pincode: pin,
+    address_line: address,
+    cuisine_tags: cuisine,
+    status: 'pending_approval'
+  });
+
+  dbTables.push({ id: "t-" + Date.now(), restaurant_id: newId, table_number: "Table 1 (Family)", capacity: 4, is_operational: true });
+
+  alert("रेस्टोरेंट रजिस्ट्रेशन सबमिट हुआ! सुपरएडमिन द्वारा अप्रूवल की आवश्यकता है।");
+  closeModal('register-owner-modal');
+  if (authenticatedRoles.admin) renderAdminDashboard();
+}
+
+function renderAdminDashboard() {
+  const tbody = document.getElementById('admin-restaurant-tbody');
+  if (!tbody) return;
+  tbody.innerHTML = dbRestaurants.map(r => `
+    <tr class="border-b">
+      <td class="p-2.5 font-bold">${r.name}</td>
+      <td class="p-2.5">${r.locality_id}</td>
+      <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${r.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${r.status}</span></td>
+      <td class="p-2.5 text-right">
+        ${r.status === 'pending_approval' ? `<button type="button" onclick="approveRestaurant('${r.id}')" class="px-2 py-1 bg-emerald-600 text-white rounded font-bold text-[10px]">Approve</button>` : '—'}
+      </td>
+    </tr>
+  `).join('');
+}
+
+function approveRestaurant(id) {
+  const r = dbRestaurants.find(item => item.id === id);
+  if (r) r.status = 'active';
+  renderAdminDashboard();
+  renderRestaurantCards();
+}
+
+// ==========================================
+// 8. NAVIGATION
+// ==========================================
+function navigateCustomer(screen) {
+  ['home', 'details', 'bookings'].forEach(s => {
+    const el = document.getElementById(`cust-screen-${s}`);
+    if (el) el.classList.toggle('hidden', s !== screen);
+  });
+  if (screen === 'bookings') renderCustomerBookings();
+}
+
+function renderCustomerBookings() {
+  const cont = document.getElementById('my-bookings-list');
+  if (!cont) return;
+  if (dbBookings.length === 0) {
+    cont.innerHTML = `<div class="p-8 text-center text-xs text-slate-400">No bookings yet.</div>`;
+    return;
+  }
+  cont.innerHTML = dbBookings.map(b => `
+    <div class="p-3 border rounded-xl bg-white space-y-1 text-xs">
+      <div class="flex justify-between font-bold">
+        <span>Booking #${b.id}</span>
+        <span class="text-emerald-600 uppercase">${b.status}</span>
+      </div>
+      <p class="text-slate-500">${b.booking_date} @ ${b.booking_time} (${b.guest_count} Guests)</p>
+    </div>
+  `).join('');
+}
+
+function closeModal(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.add('hidden');
+    el.classList.remove('flex');
+  }
+}
+
+function triggerNearbyGps() {
+  alert("GPS active: Showing restaurants near Sasaram.");
+  selectedLocality = 'sasaram';
+  const locSelect = document.getElementById('locality-filter-select');
+  if (locSelect) locSelect.value = 'sasaram';
+  renderRestaurantCards();
+}
+
+function toggleLang() {
+  currentLang = currentLang === 'en' ? 'hi' : 'en';
+  const langEl = document.getElementById('current-lang-label');
+  if (langEl) langEl.innerText = currentLang === 'en' ? 'हिन्दी' : 'English';
+    }
